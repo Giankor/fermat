@@ -29,4 +29,9 @@ public interface NetworkClientManager {
      */
     NetworkClientConnection getConnection(String uriToNode);
 
+    /*
+     * stop connection of websocket channel network-client
+     */
+    void stop();
+
 }

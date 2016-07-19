@@ -150,4 +150,9 @@ public interface NetworkClientConnection {
      */
     String getActorFullPhoto(final String publicKey) throws CantRequestActorFullPhotoException;
 
+    /*
+     * close the connection to finish
+     */
+    void closeConnection();
+
 }

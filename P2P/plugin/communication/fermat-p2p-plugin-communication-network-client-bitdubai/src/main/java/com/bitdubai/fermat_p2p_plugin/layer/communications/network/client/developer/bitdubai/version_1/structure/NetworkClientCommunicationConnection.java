@@ -895,6 +895,21 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
         return actorFullPhoto;
     }
 
+    @Override
+    public void closeConnection() {
+        try {
+
+            if(networkClientCommunicationChannel != null &&
+                    networkClientCommunicationChannel.getClientConnection() != null &&
+                    networkClientCommunicationChannel.getClientConnection().isOpen()){
+                networkClientCommunicationChannel.getClientConnection().close();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Notify when the network client connection is lost.
      */
@@ -1084,4 +1099,6 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
     public void close() throws IOException {
         networkClientCommunicationChannel.getClientConnection().close();
     }
+
+
 }

@@ -48,7 +48,8 @@ public class CheckInClientRespondProcessor extends PackageProcessor {
                 networkClientCommunicationChannel,
                 PackageType.CHECK_IN_CLIENT_RESPONSE
         );
-        nodeConnectionHistoryDao = new NodeConnectionHistoryDao((Database) ClientContext.get(ClientContextItem.DATABASE));
+        //TODO: database no se necesita en el network-client to the test of Apache JMeter
+       // nodeConnectionHistoryDao = new NodeConnectionHistoryDao((Database) ClientContext.get(ClientContextItem.DATABASE));
     }
 
     /**
@@ -106,8 +107,9 @@ public class CheckInClientRespondProcessor extends PackageProcessor {
                  * if nodeProfile is null then it is connected in the the Seed Node
                  * else save in the table
                  */
-                if(getChannel().getConnection().getNodeProfile() != null)
-                    saveNodeProfileInHistoryConnection(getChannel().getConnection().getNodeProfile());
+                //TODO: database no se necesita en el network-client to the test of Apache JMeter
+//                if(getChannel().getConnection().getNodeProfile() != null)
+//                    saveNodeProfileInHistoryConnection(getChannel().getConnection().getNodeProfile());
 
             /*
              * Create a raise a new event whit the platformComponentProfile registered

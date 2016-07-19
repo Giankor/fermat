@@ -75,7 +75,7 @@ import java.util.concurrent.TimeUnit;
  * @since Java JDK 1.7
  */
 @PluginInfo(createdBy = "Hendry Rodriguez", maintainerMail = "laion.cj91@gmail.com", platform = Platforms.COMMUNICATION_PLATFORM, layer = Layers.COMMUNICATION, plugin = Plugins.NETWORK_CLIENT)
-public class NetworkClientCommunicationPluginRoot extends AbstractPlugin implements NetworkClientManager,NetworkChannel {
+public class NetworkClientCommunicationPluginRoot extends AbstractPlugin implements NetworkClientManager {
 
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.EVENT_MANAGER)
     private EventManager eventManager;
@@ -88,13 +88,6 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
     @NeededAddonReference(platform = Platforms.OPERATIVE_SYSTEM_API, layer = Layers.SYSTEM, addon = Addons.DEVICE_LOCATION)
     private LocationManager locationManager;
-
-    @NeededAddonReference(platform = Platforms.OPERATIVE_SYSTEM_API, layer = Layers.SYSTEM, addon = Addons.DEVICE_CONNECTIVITY)
-    private ConnectivityManager connectivityManager;
-
-    //todo: esto va por ahora, más adelante se saca si o si
-    @NeededPluginReference(platform = Platforms.COMMUNICATION_PLATFORM, layer = Layers.COMMUNICATION, plugin = Plugins.P2P_LAYER)
-    private P2PLayerManager p2PLayerManager;
 
     /**
      * Represent the node identity
@@ -153,7 +146,6 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
      */
     public NetworkClientCommunicationPluginRoot() {
         super(new PluginVersionReference(new Version()));
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
     }
 
     @Override
@@ -171,12 +163,8 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
             /*
              * Initialize the identity of the node
              */
-            initializeIdentity();
+            identity = new ECCKeyPair();
 
-             /*
-             * Initialize the Data Base of the node
-             */
-            initializeDb();
 
             /*
              * Initialize the networkClientConnectionsManager to the Connections
@@ -187,34 +175,23 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
              * Add references to the node context
              */
             ClientContext.add(ClientContextItem.CLIENT_IDENTITY, identity    );
-            ClientContext.add(ClientContextItem.DATABASE, dataBase);
+//            ClientContext.add(ClientContextItem.DATABASE, dataBase); TODO: database no se necesita en el network-client to the test of Apache JMeter
             ClientContext.add(ClientContextItem.LOCATION_MANAGER, locationManager);
             ClientContext.add(ClientContextItem.EVENT_MANAGER, eventManager);
             ClientContext.add(ClientContextItem.CLIENTS_CONNECTIONS_MANAGER, networkClientConnectionsManager);
 
-            p2PLayerManager.register(this);
+            networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
+                    NetworkClientCommunicationPluginRoot.SERVER_IP + ":" + HardcodeConstants.DEFAULT_PORT,
+                    eventManager,
+                    locationManager,
+                    identity,
+                    NetworkClientCommunicationPluginRoot.this,
+                    -1,
+                    Boolean.FALSE,
+                    null
+            );
 
-            connectivityManager.registerListener(new NetworkStateReceiver() {
-                @Override
-                public void networkAvailable(DeviceNetwork deviceNetwork) {
-                    System.out.println("########################################\n");
-                    System.out.println("Netowork available!!!!\n+" + "NetworkType: " + deviceNetwork);
-                    System.out.println("########################################\n");
-                }
-
-                @Override
-                public void networkUnavailable() {
-                    System.out.println("########################################\n");
-                    System.out.println("Netowork UNAVAILABLE!!!!\n");
-                    System.out.println("########################################\n");
-
-                    if(networkClientCommunicationConnection != null)
-                        networkClientCommunicationConnection.setTryToReconnect(Boolean.FALSE);
-                }
-
-            });
-
-//            connectivityManager.isConnectedToAnyProvider()
+            networkClientCommunicationConnection.initializeAndConnect();
 
 
         } catch (Exception exception){
@@ -564,117 +541,15 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
     }
 
-    @Override
-    public void connect() {
-
-        try {
-
-            /*
-             * get NodesProfile List From NodesProfileConnectionHistory table
-             */
-            nodesProfileList = getNodesProfileFromConnectionHistory();
-
-            if (nodesProfileList != null && nodesProfileList.size() >= 1) {
-
-                networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                        nodesProfileList.get(0).getIp() + ":" + nodesProfileList.get(0).getDefaultPort(),
-                        eventManager,
-                        locationManager,
-                        identity,
-                        this,
-                        0,
-                        Boolean.FALSE,
-                        nodesProfileList.get(0)
-                );
-
-
-            } else {
-
-                /*
-                * get NodesProfile List From Restful in Seed Node
-                */
-
-                if (executorService == null) executorService = Executors.newSingleThreadExecutor();
-
-
-//                        nodesProfileList = getNodesProfileList();
-
-                if (nodesProfileList != null && nodesProfileList.size() > 0) {
-
-                    networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                            nodesProfileList.get(0).getIp() + ":" + nodesProfileList.get(0).getDefaultPort(),
-                            eventManager,
-                            locationManager,
-                            identity,
-                            NetworkClientCommunicationPluginRoot.this,
-                            0,
-                            Boolean.FALSE,
-                            nodesProfileList.get(0)
-                    );
-
-                } else {
-
-                    networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                            NetworkClientCommunicationPluginRoot.SERVER_IP + ":" + HardcodeConstants.DEFAULT_PORT,
-                            eventManager,
-                            locationManager,
-                            identity,
-                            NetworkClientCommunicationPluginRoot.this,
-                            -1,
-                            Boolean.FALSE,
-                            null
-                    );
-
-                }
-            }
-
-            executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    networkClientCommunicationConnection.initializeAndConnect();
-                }
-            });
-
-           /*
-            * Create and Scheduled the supervisorConnectionAgent
-            */
-            final NetworkClientCommunicationSupervisorConnectionAgent supervisorConnectionAgent = new NetworkClientCommunicationSupervisorConnectionAgent(this);
-            scheduledExecutorService.scheduleAtFixedRate(supervisorConnectionAgent, 5, 10, TimeUnit.SECONDS);
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void disconnect() {
-        try {
-            scheduledExecutorService.shutdownNow();
-        }catch (Exception e){
-
-        }
-        try {
-            networkClientCommunicationConnection.close();
-        }catch (Exception e){
-
-        }
-
-
-    }
 
     @Override
     public void stop() {
-        try {
-            executorService.shutdownNow();
-        }catch (Exception e){
 
-        }
-
-        scheduledExecutorService.shutdownNow();
+        getConnection().closeConnection();
         super.stop();
     }
 
-    @Override
+
     public boolean isConnected() {
         return getConnection().isConnected();
     }
