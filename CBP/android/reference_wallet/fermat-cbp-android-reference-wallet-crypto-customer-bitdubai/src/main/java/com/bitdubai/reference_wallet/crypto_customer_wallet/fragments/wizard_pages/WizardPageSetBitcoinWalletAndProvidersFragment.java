@@ -203,6 +203,18 @@ public class WizardPageSetBitcoinWalletAndProvidersFragment extends AbstractFerm
         fragmentContainer.setVisibility(View.VISIBLE);
         showHelpDialog();
 
+//            @Override
+//            public void run() {
+//                //If wallet already configured, go directly to wallet
+//                if (walletConfigured) {
+//                    changeActivity(Activities.CBP_CRYPTO_CUSTOMER_WALLET_HOME, appSession.getAppPublicKey());
+//                } else {  //otherwise, show wizard page
+//                    fragmentContainer.setVisibility(View.VISIBLE);
+//                    showHelpDialog();
+//                }
+//            }
+//        }, 250);
+
         return layout;
     }
 
@@ -236,6 +248,7 @@ public class WizardPageSetBitcoinWalletAndProvidersFragment extends AbstractFerm
                             .setBody(R.string.ccw_wizard_providers_dialog_body)
                             .setTextFooter(R.string.ccw_wizard_providers_dialog_footer)
                             .setCheckboxText(R.string.ccw_wizard_not_show_text)
+                            .setVIewColor(R.color.ccw_wizard_wallet_button_color)
                             .setIsCheckEnabled(false)
                             .build();
                     presentationDialog.setOnDismissListener(this);
@@ -250,13 +263,13 @@ public class WizardPageSetBitcoinWalletAndProvidersFragment extends AbstractFerm
                             .setSubTitle(R.string.ccw_wizard_providers_dialog_sub_title)
                             .setBody(R.string.ccw_wizard_providers_dialog_body)
                             .setCheckboxText(R.string.ccw_wizard_not_show_text)
+                            .setVIewColor(R.color.ccw_wizard_wallet_button_color)
                             .setIsCheckEnabled(false)
                             .build();
 
                     presentationDialog.setOnDismissListener(this);
 
                     final CryptoCustomerWalletPreferenceSettings preferenceSettings = moduleManager.loadAndGetSettings(appSession.getAppPublicKey());
-
                     final boolean showDialog = preferenceSettings.isHomeTutorialDialogEnabled();
                     if (showDialog){
                         getActivity().runOnUiThread(new Runnable() {

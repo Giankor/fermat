@@ -15,9 +15,9 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.RecordNotFoundException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.RestFulServices;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.GZIP;
@@ -32,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -60,6 +62,9 @@ public class Profiles implements RestFulServices {
      */
     private DaoFactory daoFactory;
 
+    /**
+     * Represent the pluginRoot
+     */
     private NetworkNodePluginRoot pluginRoot;
 
     @POST
@@ -105,9 +110,7 @@ public class Profiles implements RestFulServices {
 
         } catch (Exception e){
 
-            e.printStackTrace();
-
-            LOG.warn("requested list is not available");
+            LOG.error("requested list is not available.", e);
             jsonObjectRespond.addProperty("failure", "Requested list is not available");
         }
 
@@ -118,6 +121,49 @@ public class Profiles implements RestFulServices {
         return Response.status(200).entity(jsonString).build();
 
     }
+
+
+    @GET
+    @GZIP
+    @Path("/actor/photo/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getFullPhoto(@PathParam("id") String actorIdentityPublicKey){
+
+        LOG.info(" --------------------------------------------------------------------- ");
+        LOG.info("Profiles - Starting listActors");
+        JsonObject jsonObjectRespond = new JsonObject();
+
+        try{
+
+            LOG.info("actorIdentityPublicKey  = " + actorIdentityPublicKey);
+            ActorsCatalog actorsCatalog = getDaoFactory().getActorsCatalogDao().findById(actorIdentityPublicKey);
+
+            /*
+             * Create the respond
+             */
+            if (actorsCatalog.getPhoto() != null && actorsCatalog.getPhoto().length > 0) {
+                jsonObjectRespond.addProperty("photo", Base64.encodeBase64String(actorsCatalog.getPhoto()));
+                jsonObjectRespond.addProperty("success", Boolean.TRUE);
+            }else {
+                jsonObjectRespond.addProperty("success", Boolean.FALSE);
+                jsonObjectRespond.addProperty("failure", "Actor photo is not available");
+            }
+
+        } catch (Exception e){
+
+            e.printStackTrace();
+
+            LOG.warn("Actor photo is not available, or actor no exist");
+            jsonObjectRespond.addProperty("success", Boolean.FALSE);
+            jsonObjectRespond.addProperty("failure", "Actor photo is not available, or actor no exist");
+        }
+
+        String jsonString = GsonProvider.getGson().toJson(jsonObjectRespond);
+        return Response.status(200).entity(jsonString).build();
+
+    }
+
+
 
     /**
      * Filter all actor component profiles from database that match with the given parameters.
@@ -143,14 +189,16 @@ public class Profiles implements RestFulServices {
         if (discoveryQueryParameters.getOffset() != null && discoveryQueryParameters.getOffset() >= 0)
             offset = discoveryQueryParameters.getOffset();
 
+        System.out.println("The max and offset applied in database are: max="+max+" | offset="+offset);
+
         actorsList = getDaoFactory().getActorsCatalogDao().findAll(discoveryQueryParameters, clientIdentityPublicKey, max, offset);
 
         if (discoveryQueryParameters.isOnline() != null && discoveryQueryParameters.isOnline())
             for (ActorsCatalog actorsCatalog : actorsList)
-             profileList.put(actorsCatalog.getIdentityPublicKey(), buildActorProfileFromActorCatalogRecordAndSetStatus(actorsCatalog));
+             profileList.put(actorsCatalog.getIdentityPublicKey(), buildActorProfileFromActorCatalogRecordAndSetStatus(actorsCatalog, discoveryQueryParameters.getOriginalPhoto()));
         else
             for (ActorsCatalog actorsCatalog : actorsList)
-                profileList.put(actorsCatalog.getIdentityPublicKey(), buildActorProfileFromActorCatalogRecord(actorsCatalog));
+                profileList.put(actorsCatalog.getIdentityPublicKey(), buildActorProfileFromActorCatalogRecord(actorsCatalog, discoveryQueryParameters.getOriginalPhoto()));
 
         return new ArrayList<>(profileList.values());
     }
@@ -158,15 +206,20 @@ public class Profiles implements RestFulServices {
     /**
      * Build an Actor Profile from an Actor Catalog record.
      */
-    private ActorProfile buildActorProfileFromActorCatalogRecord(final ActorsCatalog actor){
+    private ActorProfile buildActorProfileFromActorCatalogRecord(final ActorsCatalog actor, final Boolean originalPhoto){
 
         ActorProfile actorProfile = new ActorProfile();
 
         actorProfile.setIdentityPublicKey(actor.getIdentityPublicKey());
-        actorProfile.setAlias            (actor.getAlias());
-        actorProfile.setName             (actor.getName());
-        actorProfile.setActorType        (actor.getActorType());
-        actorProfile.setPhoto            (actor.getPhoto());
+        actorProfile.setAlias(actor.getAlias());
+        actorProfile.setName(actor.getName());
+        actorProfile.setActorType(actor.getActorType());
+
+        if(originalPhoto != null && originalPhoto)
+            actorProfile.setPhoto(actor.getPhoto());
+        else
+            actorProfile.setPhoto(actor.getThumbnail());
+
         actorProfile.setExtraData        (actor.getExtraData());
         actorProfile.setLocation         (actor.getLastLocation());
 
@@ -176,15 +229,20 @@ public class Profiles implements RestFulServices {
     /**
      * Build an Actor Profile from an Actor Catalog record and set its status.
      */
-    private ActorProfile buildActorProfileFromActorCatalogRecordAndSetStatus(final ActorsCatalog actor){
+    private ActorProfile buildActorProfileFromActorCatalogRecordAndSetStatus(final ActorsCatalog actor, final Boolean originalPhoto){
 
         ActorProfile actorProfile = new ActorProfile();
 
         actorProfile.setIdentityPublicKey(actor.getIdentityPublicKey());
-        actorProfile.setAlias            (actor.getAlias());
-        actorProfile.setName             (actor.getName());
-        actorProfile.setActorType        (actor.getActorType());
-        actorProfile.setPhoto            (actor.getPhoto());
+        actorProfile.setAlias(actor.getAlias());
+        actorProfile.setName(actor.getName());
+        actorProfile.setActorType(actor.getActorType());
+
+        if(originalPhoto != null && originalPhoto)
+            actorProfile.setPhoto            (actor.getPhoto());
+        else
+            actorProfile.setPhoto            (actor.getThumbnail());
+
         actorProfile.setExtraData        (actor.getExtraData());
         actorProfile.setLocation         (actor.getLastLocation());
 
@@ -209,7 +267,7 @@ public class Profiles implements RestFulServices {
 
             if(actorsCatalog.getNodeIdentityPublicKey().equals(getPluginRoot().getIdentity().getPublicKey())) {
 
-                if (getDaoFactory().getCheckedInActorDao().exists(actorsCatalog.getIdentityPublicKey()))
+                if (getDaoFactory().getCheckedInProfilesDao().exists(actorsCatalog.getIdentityPublicKey()))
                     return ProfileStatus.ONLINE;
                 else
                     return ProfileStatus.OFFLINE;
@@ -247,9 +305,8 @@ public class Profiles implements RestFulServices {
             String respond = reader.readLine();
 
             if (conn.getResponseCode() == 200 && respond != null && respond.contains("success")) {
-                JsonParser parser = new JsonParser();
-                JsonObject respondJsonObject = (JsonObject) parser.parse(respond.trim());
 
+                JsonObject respondJsonObject = (JsonObject) GsonProvider.getJsonParser().parse(respond.trim());
                 return respondJsonObject.get("isOnline").getAsBoolean() ? ProfileStatus.ONLINE : ProfileStatus.OFFLINE;
 
             } else {

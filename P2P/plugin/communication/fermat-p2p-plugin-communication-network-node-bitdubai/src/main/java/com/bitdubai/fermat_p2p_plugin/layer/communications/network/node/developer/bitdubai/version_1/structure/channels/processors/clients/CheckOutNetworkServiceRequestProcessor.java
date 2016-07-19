@@ -1,18 +1,19 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.clients;
 
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTransaction;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.request.CheckOutProfileMsgRequest;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.respond.CheckOutProfileMsjRespond;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.enums.ProfileTypes;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.FermatWebSocketChannelEndpoint;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.PackageProcessor;
-import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.database.CommunicationsNetworkNodeP2PDatabaseConstants;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.database.utils.DatabaseTransactionStatementPair;
-import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.CheckedInNetworkService;
-import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.CheckedNetworkServicesHistory;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.CheckedInProfile;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.ProfileRegistrationHistory;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.enums.RegistrationType;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantCreateTransactionStatementPairException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantDeleteRecordDataBaseException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantInsertRecordDataBaseException;
@@ -22,9 +23,6 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
-
-import javax.websocket.EncodeException;
 import javax.websocket.Session;
 
 /**
@@ -44,25 +42,22 @@ public class CheckOutNetworkServiceRequestProcessor extends PackageProcessor {
     private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(CheckOutNetworkServiceRequestProcessor.class));
 
     /**
-     * Constructor  whit parameter
-     *
-     * @param fermatWebSocketChannelEndpoint register
-     *
+     * Constructor
      */
-    public CheckOutNetworkServiceRequestProcessor(FermatWebSocketChannelEndpoint fermatWebSocketChannelEndpoint) {
-        super(fermatWebSocketChannelEndpoint, PackageType.CHECK_OUT_NETWORK_SERVICE_REQUEST);
+    public CheckOutNetworkServiceRequestProcessor() {
+        super(PackageType.CHECK_OUT_NETWORK_SERVICE_REQUEST);
     }
 
     /**
      * (non-javadoc)
-     * @see PackageProcessor#processingPackage(Session, Package)
+     * @see PackageProcessor#processingPackage(Session, Package, FermatWebSocketChannelEndpoint)
      */
     @Override
-    public void processingPackage(Session session, Package packageReceived) {
+    public void processingPackage(Session session, Package packageReceived, FermatWebSocketChannelEndpoint channel) {
 
         LOG.info("Processing new package received");
 
-        String channelIdentityPrivateKey = getChannel().getChannelIdentity().getPrivateKey();
+        String channelIdentityPrivateKey = channel.getChannelIdentity().getPrivateKey();
         String destinationIdentityPublicKey = (String) session.getUserProperties().get(HeadersAttName.CPKI_ATT_HEADER_NAME);
         String profileIdentity = null;
 
@@ -88,7 +83,7 @@ public class CheckOutNetworkServiceRequestProcessor extends PackageProcessor {
                 /*
                 * Load from Database
                 */
-                CheckedInNetworkService checkedInNetworkService = getDaoFactory().getCheckedInNetworkServiceDao().findById(profileIdentity);
+                CheckedInProfile checkedInNetworkService = getDaoFactory().getCheckedInProfilesDao().findById(profileIdentity);
 
                 /*
                  * Validate if exist
@@ -96,7 +91,7 @@ public class CheckOutNetworkServiceRequestProcessor extends PackageProcessor {
                 if (checkedInNetworkService != null){
 
                     // create transaction for
-                    DatabaseTransaction databaseTransaction = getDaoFactory().getCheckedInNetworkServiceDao().getNewTransaction();
+                    DatabaseTransaction databaseTransaction = getDaoFactory().getCheckedInProfilesDao().getNewTransaction();
                     DatabaseTransactionStatementPair pair;
 
                     /*
@@ -167,7 +162,7 @@ public class CheckOutNetworkServiceRequestProcessor extends PackageProcessor {
         /*
          * validate if exists
          */
-        return getDaoFactory().getCheckedInNetworkServiceDao().createDeleteTransactionStatementPair(profileIdentity);
+        return getDaoFactory().getCheckedInProfilesDao().createDeleteTransactionStatementPair(profileIdentity);
 
     }
 
@@ -177,23 +172,24 @@ public class CheckOutNetworkServiceRequestProcessor extends PackageProcessor {
      * @param checkedInNetworkService
      * @throws CantInsertRecordDataBaseException
      */
-    private DatabaseTransactionStatementPair insertCheckedInNetworkServiceHistory(CheckedInNetworkService checkedInNetworkService) throws CantInsertRecordDataBaseException, CantCreateTransactionStatementPairException {
+    private DatabaseTransactionStatementPair insertCheckedInNetworkServiceHistory(CheckedInProfile checkedInNetworkService) throws CantInsertRecordDataBaseException, CantCreateTransactionStatementPairException {
 
         /*
-         * Create the ClientsRegistrationHistory
+         * Create the ProfileRegistrationHistory
          */
-        CheckedNetworkServicesHistory checkedNetworkServicesHistory = new CheckedNetworkServicesHistory();
-        checkedNetworkServicesHistory.setIdentityPublicKey(checkedInNetworkService.getIdentityPublicKey());
-        checkedNetworkServicesHistory.setClientIdentityPublicKey(checkedInNetworkService.getClientIdentityPublicKey());
-        checkedNetworkServicesHistory.setNetworkServiceType(checkedInNetworkService.getNetworkServiceType());
-        checkedNetworkServicesHistory.setLastLatitude(checkedInNetworkService.getLatitude());
-        checkedNetworkServicesHistory.setLastLongitude(checkedInNetworkService.getLongitude());
-        checkedNetworkServicesHistory.setCheckType(CheckedNetworkServicesHistory.CHECK_TYPE_OUT);
 
+        ProfileRegistrationHistory profileRegistrationHistory = new ProfileRegistrationHistory(
+                checkedInNetworkService.getIdentityPublicKey(),
+                checkedInNetworkService.getInformation(),
+                ProfileTypes.NETWORK_SERVICE,
+                RegistrationType.CHECK_OUT,
+                null,
+                null
+        );
         /*
          * Save into the data base
          */
-        return getDaoFactory().getCheckedNetworkServicesHistoryDao().createInsertTransactionStatementPair(checkedNetworkServicesHistory);
+        return getDaoFactory().getRegistrationHistoryDao().createInsertTransactionStatementPair(profileRegistrationHistory);
 
     }
 

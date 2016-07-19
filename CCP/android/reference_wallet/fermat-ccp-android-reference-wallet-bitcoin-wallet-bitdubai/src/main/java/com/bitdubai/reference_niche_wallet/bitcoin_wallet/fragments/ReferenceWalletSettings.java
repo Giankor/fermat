@@ -1,11 +1,13 @@
 package com.bitdubai.reference_niche_wallet.bitcoin_wallet.fragments;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 import com.bitdubai.android_fermat_ccp_wallet_bitcoin.R;
@@ -20,6 +22,7 @@ import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantPers
 import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.SettingsNotFoundException;
 import com.bitdubai.fermat_api.layer.modules.interfaces.FermatSettings;
 import com.bitdubai.fermat_bch_api.layer.crypto_vault.classes.vault_seed.exceptions.CantLoadExistingVaultSeed;
+import com.bitdubai.fermat_bch_api.layer.crypto_vault.exceptions.CantImportSeedException;
 import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.BitcoinFee;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.crypto_wallet.BitcoinWalletSettings;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.crypto_wallet.interfaces.CryptoWallet;
@@ -63,7 +66,7 @@ public class ReferenceWalletSettings extends FermatPreferenceFragment<ReferenceA
         super.onCreate(savedInstanceState);
         referenceWalletSession = appSession;
         try {
-            getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             //noinspection unchecked
         } catch (Exception e) {
             referenceWalletSession.getErrorManager().reportUnexpectedWalletException(Wallets.CWP_WALLET_RUNTIME_WALLET_BITCOIN_WALLET_ALL_BITDUBAI, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
@@ -109,7 +112,7 @@ public class ReferenceWalletSettings extends FermatPreferenceFragment<ReferenceA
 
 
             final Bundle networkDialog = new Bundle();
-            String items[] = new String[]{"MainNet", "TestNet", "RegTest"};
+            String items[] = new String[]{"MainNet", "TestNet"};
             networkDialog.putStringArray("items_array", items);
             networkDialog.putString("positive_button_text", getResources().getString(R.string.ok_label));
             networkDialog.putString("negative_button_text", getResources().getString(R.string.cancel_label));
@@ -130,7 +133,7 @@ public class ReferenceWalletSettings extends FermatPreferenceFragment<ReferenceA
             dataDialogFeed.putStringArray("items_array", feedLevel);
             dataDialogFeed.putString("positive_button_text", getResources().getString(R.string.ok_label));
             dataDialogFeed.putString("negative_button_text", getResources().getString(R.string.cancel_label));
-            dataDialogFeed.putString("title", getResources().getString(R.string.title_Feed));
+            dataDialogFeed.putString("title", getResources().getString(R.string.title_Fee));
             dataDialogFeed.putString("mode", "single_option");
             dataDialogFeed.putString("previous_selected_item", previousSelectedFee);
             list.add(new PreferenceSettingsOpenDialogText(13, "Feed Level", dataDialogFeed));
@@ -242,7 +245,7 @@ public class ReferenceWalletSettings extends FermatPreferenceFragment<ReferenceA
                         try {
                             appSession.getModuleManager().importMnemonicCode(tempList,date, blockchainNetworkType);
                             showMessage(getActivity(), "Import Mnemonic code OK ");
-                        } catch (CantLoadExistingVaultSeed cantLoadExistingVaultSeed) {
+                        } catch (CantImportSeedException cantLoadExistingVaultSeed) {
                             showMessage(getActivity(), "Import Mnemonic code ERROR " + cantLoadExistingVaultSeed.getMessage());
                             cantLoadExistingVaultSeed.printStackTrace();
                         }

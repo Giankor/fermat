@@ -296,17 +296,14 @@ public class OutgoingIntraActorTransactionProcessorAgent extends FermatAgent {
                     try {
                         String hash;
 
+                        CryptoAmount cryptoAmount = new CryptoAmount(transaction.getAmount(),transaction.getFeeOrigin(),transaction.getFee());
+
                         hash = (transaction.getOp_Return() == null) ?
-                                this.cryptoVaultManager.generateTransaction(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), new CryptoAmount(transaction.getAmount(),transaction.getFeeOrigin(),transaction.getFee()), transaction.getBlockchainNetworkType())
+                                this.cryptoVaultManager.generateTransaction(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), cryptoAmount, transaction.getBlockchainNetworkType())
                                 :
-                                this.cryptoVaultManager.generateTransaction(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), new CryptoAmount(transaction.getAmount(),transaction.getFeeOrigin(),transaction.getFee()), transaction.getOp_Return(), transaction.getBlockchainNetworkType());
+                                this.cryptoVaultManager.generateTransaction(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), cryptoAmount, transaction.getOp_Return(), transaction.getBlockchainNetworkType());
 
-//                        if (transaction.getOp_Return() == null)
-//                            hash = this.cryptoVaultManager.sendBitcoins(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), transaction.getAmount());
-//                        else
-//                            hash = this.cryptoVaultManager.sendBitcoins(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), transaction.getAmount(), transaction.getOp_Return());
-
-
+                        transaction.setTotal(cryptoAmount.getTotal());
                         System.out.print("-------------- sendBitcoins to cryptoVaultManager");
                         dao.setTransactionHash(transaction, hash);
                         // TODO: The crypto vault should let us obtain the transaction hash before sending the currency. As this was never provided by the vault
@@ -371,7 +368,7 @@ public class OutgoingIntraActorTransactionProcessorAgent extends FermatAgent {
                         reportUnexpectedException(e);
 
                         //if I spend more than five minutes I canceled
-                        long sentDate = transaction.getTimestamp();
+                       /* long sentDate = transaction.getTimestamp();
                         long currentTime = System.currentTimeMillis();
                         long dif = currentTime - sentDate;
 
@@ -385,7 +382,7 @@ public class OutgoingIntraActorTransactionProcessorAgent extends FermatAgent {
                                 e1.printStackTrace();
                             }
 
-                        }
+                        }*/
 
 
                      } catch (Exception e) {
@@ -395,7 +392,7 @@ public class OutgoingIntraActorTransactionProcessorAgent extends FermatAgent {
                         long currentTime = System.currentTimeMillis();
                         long dif = currentTime - sentDate;
 
-                        if (dif >= 180000) {
+                        if (dif >= 540000) {
                             try {
                                 dao.cancelTransaction(transaction);
                                 roolback(transaction, true);

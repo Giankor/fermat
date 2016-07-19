@@ -32,6 +32,7 @@ import com.bitdubai.fermat_api.layer.osa_android.location_system.LocationManager
 import com.bitdubai.fermat_api.layer.osa_android.location_system.exceptions.CantGetDeviceLocationException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.NetworkNodeManager;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NodeProfile;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.util.GsonProvider;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.FermatEmbeddedNodeServer;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.agents.PropagateActorCatalogAgent;
@@ -251,8 +252,8 @@ public class NetworkNodePluginRoot extends AbstractPlugin implements NetworkNode
             LOG.info("Initializing propagate catalog agents ...");
             this.propagateNodeCatalogAgent = new PropagateNodeCatalogAgent(this);
             this.propagateActorCatalogAgent =  new PropagateActorCatalogAgent(this);
-            propagateNodeCatalogAgent.start();
-            propagateActorCatalogAgent.start();
+          //  propagateNodeCatalogAgent.start();
+          //  propagateActorCatalogAgent.start();
 
             /*
              * Try to forwarding port
@@ -723,7 +724,7 @@ public class NetworkNodePluginRoot extends AbstractPlugin implements NetworkNode
                 LOG.info("Request the list of transactions in the actors catalog");
 
                 FermatWebSocketClientNodeChannel fermatWebSocketClientNodeChannel = getFermatWebSocketClientNodeChannelInstanceSeedNode();
-                GetActorCatalogTransactionsMsjRequest getActorCatalogTransactionsMsjRequest = new GetActorCatalogTransactionsMsjRequest(1, 10);
+                GetActorCatalogTransactionsMsjRequest getActorCatalogTransactionsMsjRequest = new GetActorCatalogTransactionsMsjRequest(0, 10);
                 fermatWebSocketClientNodeChannel.sendMessage(getActorCatalogTransactionsMsjRequest.toJson(), PackageType.GET_ACTOR_CATALOG_TRANSACTIONS_REQUEST);
             }
 
@@ -964,7 +965,7 @@ public class NetworkNodePluginRoot extends AbstractPlugin implements NetworkNode
                    /*
                     * Decode into a json Object
                     */
-                    JsonParser parser = new JsonParser();
+                    JsonParser parser = GsonProvider.getJsonParser();
                     JsonObject respondJsonObject = (JsonObject) parser.parse(respond.trim());
 
                     LOG.info(respondJsonObject);
@@ -1005,25 +1006,17 @@ public class NetworkNodePluginRoot extends AbstractPlugin implements NetworkNode
 
             LOG.info("Executing the clean check in tables");
 
-            LOG.info("Deleting CHECK_IN_CLIENT records");
-            daoFactory.getCheckedInClientDao().deleteAll();
-
-            LOG.info("Deleting CHECK_IN_NETWORK_SERVICE records");
-            daoFactory.getCheckedInNetworkServiceDao().deleteAll();
-
-            LOG.info("Deleting CHECK_IN_ACTORS records");
-            daoFactory.getCheckedInActorDao().deleteAll();
-
-            LOG.info("Deleting CHECK_IN_NETWORK_SERVICES_HISTORY records");
-            daoFactory.getCheckedNetworkServicesHistoryDao().deleteAll();
-
-            LOG.info("Deleting CHECK_IN_ACTORS_HISTORY records");
-            daoFactory.getCheckedActorsHistoryDao().deleteAll();
+            LOG.info("Deleting CHECKED_IN_PROFILES records");
+            daoFactory.getCheckedInProfilesDao().deleteAll();
 
         }catch (Exception e){
             LOG.error("Can't clean Check In Tables: "+e.getMessage());
         }
 
+    }
+
+    public NodeProfile getNodeProfile() {
+        return nodeProfile;
     }
 
     /**

@@ -12,6 +12,7 @@ import com.bitdubai.fermat_api.layer.osa_android.location_system.Location;
 import com.bitdubai.fermat_api.layer.osa_android.location_system.exceptions.CantGetDeviceLocationException;
 import com.bitdubai.fermat_api.layer.osa_android.location_system.utils.LocationUtils;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantRegisterProfileException;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantRequestActorFullPhotoException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantUnregisterProfileException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantUpdateRegisteredProfileException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.enums.UpdateTypes;
@@ -65,7 +66,7 @@ public abstract class AbstractActorNetworkService extends AbstractNetworkService
 
         super(
                 pluginVersionReference,
-                eventSource           ,
+                eventSource,
                 networkServiceType
         );
 
@@ -151,17 +152,19 @@ public abstract class AbstractActorNetworkService extends AbstractNetworkService
                 )
         );
 
-        if (this.getConnection() != null && this.getConnection().isRegistered() && this.isRegistered()) {
-
-            try {
-
-                this.getConnection().registerProfile(actorToRegister);
-                registeredActors.get(actorToRegister).setLastExecution(System.currentTimeMillis());
-
-            } catch (CantRegisterProfileException exception) {
-
-                throw new CantRegisterActorException(exception, "publicKey: "+publicKey+" - name: "+name, "There was an error trying to register the actor through the network service.");
+        if (getConnection() != null ) {
+            if(getConnection().isRegistered()) {
+                try {
+                    this.getConnection().registerProfile(actorToRegister);
+                    registeredActors.get(actorToRegister).setLastExecution(System.currentTimeMillis());
+                } catch (CantRegisterProfileException exception) {
+                    throw new CantRegisterActorException(exception, "publicKey: " + actorToRegister.getIdentityPublicKey() + " - name: " + actorToRegister.getName(), "There was an error trying to register the actor through the network service.");
+                }
+            } else{
+                System.out.println("******************* REGISTERING ACTOR: " + actorToRegister.getName() + " - type: " + actorToRegister.getActorType() + "  getConnection().isRegistered(): " +getConnection().isRegistered());
             }
+        } else {
+            System.out.println("******************* REGISTERING ACTOR: " + actorToRegister.getName() + " - type: " + actorToRegister.getActorType() + "  getConnection(): null");
         }
 
         System.out.println("******************* REGISTERING ACTOR: " + name + " - type: " + type + "  GO OUT METHOD");
@@ -303,6 +306,15 @@ public abstract class AbstractActorNetworkService extends AbstractNetworkService
             return this.getConnection().isActorOnline(publicKey);
         else
             return false;
+    }
+
+    @Override
+    public String getActorFullPhoto(final String publicKey) throws CantRequestActorFullPhotoException {
+
+        if (this.getConnection() != null)
+            return this.getConnection().getActorFullPhoto(publicKey);
+        else
+            return null;
     }
 
     protected final void onNetworkServiceRegistered() {

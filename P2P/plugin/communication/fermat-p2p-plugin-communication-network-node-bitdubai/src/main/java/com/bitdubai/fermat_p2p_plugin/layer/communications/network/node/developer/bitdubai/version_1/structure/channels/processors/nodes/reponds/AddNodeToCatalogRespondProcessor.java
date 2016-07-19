@@ -1,11 +1,10 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.nodes.reponds;
 
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.respond.MsgRespond;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
-
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.FermatWebSocketChannelEndpoint;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.PackageProcessor;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.data.node.respond.AddNodeToCatalogMsjRespond;
@@ -24,7 +23,7 @@ import javax.websocket.Session;
  * Created by Roberto Requena - (rart3001@gmail.com) on 04/04/16.
  *
  * @version 1.0
- * @since Java JDK 1.7
+ * @since   Java JDK 1.7
  */
 public class AddNodeToCatalogRespondProcessor extends PackageProcessor {
 
@@ -34,20 +33,18 @@ public class AddNodeToCatalogRespondProcessor extends PackageProcessor {
     private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(AddNodeToCatalogRespondProcessor.class));
 
     /**
-     * Constructor with parameter
-     *
-     * @param channel
-     * */
-    public AddNodeToCatalogRespondProcessor(FermatWebSocketChannelEndpoint channel) {
-        super(channel, PackageType.ADD_NODE_TO_CATALOG_RESPONSE);
+     * Constructor
+     */
+    public AddNodeToCatalogRespondProcessor() {
+        super(PackageType.ADD_NODE_TO_CATALOG_RESPONSE);
     }
 
     /**
      * (non-javadoc)
-     * @see PackageProcessor#processingPackage(Session, Package)
+     * @see PackageProcessor#processingPackage(Session, Package, FermatWebSocketChannelEndpoint)
      */
     @Override
-    public void processingPackage(Session session, Package packageReceived) {
+    public void processingPackage(Session session, Package packageReceived, FermatWebSocketChannelEndpoint channel) {
 
         LOG.info("Processing new package received");
 
@@ -60,7 +57,7 @@ public class AddNodeToCatalogRespondProcessor extends PackageProcessor {
             /*
              * Create the method call history
              */
-            methodCallsHistory(messageContent.toJson(), destinationIdentityPublicKey);
+//            methodCallsHistory(messageContent.toJson(), destinationIdentityPublicKey);
 
             /*
              * Validate if content type is the correct
@@ -90,7 +87,6 @@ public class AddNodeToCatalogRespondProcessor extends PackageProcessor {
                 }
 
                 session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Finish add node to catalog process"));
-
             }
 
         } catch (Exception exception){
@@ -105,7 +101,5 @@ public class AddNodeToCatalogRespondProcessor extends PackageProcessor {
             }
 
         }
-
     }
-
 }

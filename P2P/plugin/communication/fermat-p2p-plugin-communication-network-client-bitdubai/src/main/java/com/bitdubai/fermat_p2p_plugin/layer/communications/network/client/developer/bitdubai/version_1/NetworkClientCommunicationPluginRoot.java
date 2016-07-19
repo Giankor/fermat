@@ -3,6 +3,8 @@ package com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.devel
 import com.bitdubai.fermat_api.CantStartPluginException;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.abstract_classes.AbstractPlugin;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.annotations.NeededAddonReference;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.annotations.NeededPluginReference;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.FermatManager;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
@@ -11,9 +13,11 @@ import com.bitdubai.fermat_api.layer.all_definition.enums.Addons;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Layers;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
-import com.bitdubai.fermat_api.layer.all_definition.location_system.DeviceLocation;
 import com.bitdubai.fermat_api.layer.all_definition.util.Version;
 import com.bitdubai.fermat_api.layer.core.PluginInfo;
+import com.bitdubai.fermat_api.layer.osa_android.ConnectivityManager;
+import com.bitdubai.fermat_api.layer.osa_android.DeviceNetwork;
+import com.bitdubai.fermat_api.layer.osa_android.NetworkStateReceiver;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.Database;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseSystem;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantCreateDatabaseException;
@@ -28,8 +32,10 @@ import com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions.FileNotF
 import com.bitdubai.fermat_api.layer.osa_android.location_system.Location;
 import com.bitdubai.fermat_api.layer.osa_android.location_system.LocationManager;
 import com.bitdubai.fermat_api.layer.osa_android.location_system.exceptions.CantGetDeviceLocationException;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.interfaces.NetworkChannel;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.interfaces.NetworkClientConnection;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.interfaces.NetworkClientManager;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.interfaces.P2PLayerManager;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NodeProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.util.GsonProvider;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.context.ClientContext;
@@ -37,16 +43,13 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.develo
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.database.NetworkClientP2PDatabaseConstants;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.database.NetworkClientP2PDatabaseFactory;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.database.daos.NodeConnectionHistoryDao;
-import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.entities.NodeConnectionHistory;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.exceptions.CantInitializeNetworkClientP2PDatabaseException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.exceptions.CantReadRecordDataBaseException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.structure.NetworkClientCommunicationConnection;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.structure.NetworkClientCommunicationSupervisorConnectionAgent;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.structure.NetworkClientConnectionsManager;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.util.HardcodeConstants;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
@@ -135,7 +138,7 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
     @Override
     public FermatManager getManager() {
-        return null;
+        return this;
     }
 
     /**
@@ -143,7 +146,6 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
      */
     public NetworkClientCommunicationPluginRoot() {
         super(new PluginVersionReference(new Version()));
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
     }
 
     @Override
@@ -161,12 +163,8 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
             /*
              * Initialize the identity of the node
              */
-            initializeIdentity();
+            identity = new ECCKeyPair();
 
-             /*
-             * Initialize the Data Base of the node
-             */
-            initializeDb();
 
             /*
              * Initialize the networkClientConnectionsManager to the Connections
@@ -177,94 +175,23 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
              * Add references to the node context
              */
             ClientContext.add(ClientContextItem.CLIENT_IDENTITY, identity    );
-            ClientContext.add(ClientContextItem.DATABASE, dataBase);
+//            ClientContext.add(ClientContextItem.DATABASE, dataBase); TODO: database no se necesita en el network-client to the test of Apache JMeter
             ClientContext.add(ClientContextItem.LOCATION_MANAGER, locationManager);
             ClientContext.add(ClientContextItem.EVENT_MANAGER, eventManager);
             ClientContext.add(ClientContextItem.CLIENTS_CONNECTIONS_MANAGER, networkClientConnectionsManager);
 
-            /*
-             * get NodesProfile List From NodesProfileConnectionHistory table
-             */
-            nodesProfileList = getNodesProfileFromConnectionHistory();
+            networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
+                    NetworkClientCommunicationPluginRoot.SERVER_IP + ":" + HardcodeConstants.DEFAULT_PORT,
+                    eventManager,
+                    locationManager,
+                    identity,
+                    NetworkClientCommunicationPluginRoot.this,
+                    -1,
+                    Boolean.FALSE,
+                    null
+            );
 
-            if(nodesProfileList != null && nodesProfileList.size() >= 1){
-
-                networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                        nodesProfileList.get(0).getIp() + ":" + nodesProfileList.get(0).getDefaultPort(),
-                        eventManager,
-                        locationManager,
-                        identity,
-                        this,
-                        0,
-                        Boolean.FALSE,
-                        nodesProfileList.get(0)
-                );
-
-
-            }else {
-
-                /*
-                * get NodesProfile List From Restful in Seed Node
-                */
-                nodesProfileList = getNodesProfileList();
-
-                if (nodesProfileList != null && nodesProfileList.size() > 0) {
-
-                    networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                            nodesProfileList.get(0).getIp() + ":" + nodesProfileList.get(0).getDefaultPort(),
-                            eventManager,
-                            locationManager,
-                            identity,
-                            this,
-                            0,
-                            Boolean.FALSE,
-                            nodesProfileList.get(0)
-                    );
-
-                } else {
-
-                    networkClientCommunicationConnection = new NetworkClientCommunicationConnection(
-                            NetworkClientCommunicationPluginRoot.SERVER_IP + ":" + HardcodeConstants.DEFAULT_PORT,
-                            eventManager,
-                            locationManager,
-                            identity,
-                            this,
-                            -1,
-                            Boolean.FALSE,
-                            null
-                    );
-
-                }
-            }
-
-            Thread thread = new Thread(){
-                @Override
-                public void run(){
-                    networkClientCommunicationConnection.initializeAndConnect();
-                }
-            };
-
-            final NetworkClientCommunicationSupervisorConnectionAgent connectionAgent = new NetworkClientCommunicationSupervisorConnectionAgent(this);
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-
-                    try {
-
-
-                        /*
-                         * Scheduled the reconnection agent
-                         */
-                        scheduledExecutorService.scheduleAtFixedRate(connectionAgent, 10, 20, TimeUnit.SECONDS);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-
-            executorService = Executors.newSingleThreadExecutor();
-            executorService.submit(thread);
+            networkClientCommunicationConnection.initializeAndConnect();
 
 
         } catch (Exception exception){
@@ -286,6 +213,7 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
 
     }
+
 
     /**
      * This method validate is all required resource are injected into
@@ -449,8 +377,8 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
      */
     public void intentToConnectToOtherNode(Integer i){
 
-        if(executorService != null)
-            executorService.shutdownNow();
+//        if(executorService != null)
+//            executorService.shutdownNow();
 
         /*
          * if is the last index then connect to networkNode Harcoded
@@ -484,15 +412,15 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
         }
 
-        Thread thread = new Thread(){
+        Runnable runnable = new Runnable(){
             @Override
             public void run(){
                 networkClientCommunicationConnection.initializeAndConnect();
             }
         };
 
-        executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(thread);
+        if(executorService==null) executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(runnable);
 
     }
 
@@ -589,8 +517,7 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
                /*
                 * Decode into a json Object
                 */
-                JsonParser parser = new JsonParser();
-                JsonObject respondJsonObject = (JsonObject) parser.parse(respond.trim());
+                JsonObject respondJsonObject = (JsonObject) GsonProvider.getJsonParser().parse(respond.trim());
 
                 listServer = GsonProvider.getGson().fromJson(respondJsonObject.get("data").getAsString(), new TypeToken<List<NodeProfile>>() {
                 }.getType());
@@ -614,4 +541,16 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
 
     }
 
+
+    @Override
+    public void stop() {
+
+        getConnection().closeConnection();
+        super.stop();
+    }
+
+
+    public boolean isConnected() {
+        return getConnection().isConnected();
+    }
 }

@@ -65,7 +65,6 @@ import com.bitdubai.android_core.app.common.version_1.builders.option_menu.Optio
 import com.bitdubai.android_core.app.common.version_1.communication.client_system_broker.exceptions.CantCreateProxyException;
 import com.bitdubai.android_core.app.common.version_1.connection_manager.FermatAppConnectionManager;
 import com.bitdubai.android_core.app.common.version_1.navigation_view.FermatActionBarDrawerEventListener;
-import com.bitdubai.android_core.app.common.version_1.notifications.NotificationService;
 import com.bitdubai.android_core.app.common.version_1.provisory.FermatInstalledDesktop;
 import com.bitdubai.android_core.app.common.version_1.provisory.InstalledDesktop;
 import com.bitdubai.android_core.app.common.version_1.provisory.ProvisoryData;
@@ -138,6 +137,7 @@ import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.option_
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.option_menu.OptionMenuPressEvent;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.option_menu.OptionsMenu;
 import com.bitdubai.fermat_api.layer.all_definition.runtime.FermatApp;
+import com.bitdubai.fermat_api.layer.osa_android.broadcaster.FermatBundle;
 import com.bitdubai.fermat_api.layer.pip_engine.desktop_runtime.DesktopObject;
 import com.bitdubai.fermat_api.layer.pip_engine.desktop_runtime.DesktopRuntimeManager;
 import com.bitdubai.sub_app.manager.fragment.DesktopSubAppFragment;
@@ -247,6 +247,7 @@ public abstract class FermatActivity extends AppCompatActivity implements
             // add new fragments.
             super.onCreate(savedInstanceState);
         } else {
+            Log.e(TAG, String.valueOf(savedInstanceState.getInt("a")));
 
             super.onCreate(new Bundle());
             // Otherwise, the activity is coming back after being destroyed.
@@ -254,17 +255,49 @@ public abstract class FermatActivity extends AppCompatActivity implements
             // need to create any new ones here.
         }
 
-        executor = Executors.newFixedThreadPool(FermatActivityConfiguration.POOL_THREADS);
+
+        if (executor==null) {
+            executor = Executors.newFixedThreadPool(FermatActivityConfiguration.POOL_THREADS);
+        }else{
+            if(executor.isShutdown()){
+                executor = Executors.newFixedThreadPool(FermatActivityConfiguration.POOL_THREADS);
+            }
+        }
 
         if(!AndroidCoreUtils.getInstance().isStarted())
             AndroidCoreUtils.getInstance().setStarted(true);
-        runtimeStructureManager = new RuntimeStructureManager(this);
 
-        updateViewReceiver = new UpdateViewReceiver(this,getFermatFramework());
+        if(updateViewReceiver==null) updateViewReceiver = new UpdateViewReceiver(this,getFermatFramework());
         IntentFilter intentFilter = new IntentFilter(UpdateViewReceiver.INTENT_NAME);
         registerReceiver(updateViewReceiver, intentFilter);
 
     }
+
+    @Override
+    public final void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the user's current game state
+        savedInstanceState.putInt("a",2);
+
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        try {
+            if (savedInstanceState == null) {
+                savedInstanceState = new Bundle();
+            } else {
+                Log.e(TAG, String.valueOf(savedInstanceState.getInt("a")));
+                super.onRestoreInstanceState(savedInstanceState);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -435,6 +468,11 @@ public abstract class FermatActivity extends AppCompatActivity implements
                 }
             }
 
+            if (runtimeStructureManager != null) {
+                runtimeStructureManager.clear();
+            }
+
+            executor.shutdownNow();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1154,11 +1192,15 @@ public abstract class FermatActivity extends AppCompatActivity implements
 
     @Override
     protected void onResume() {
+        if(!FermatApplication.getInstance().getFermatFramework().isApplicationInForeground()){
+            FermatApplication.getInstance().getFermatFramework().appOnForeground();
+        }
         if(updateViewReceiver==null){
             updateViewReceiver = new UpdateViewReceiver(this,getFermatFramework());
             IntentFilter intentFilter = new IntentFilter(UpdateViewReceiver.INTENT_NAME);
             registerReceiver(updateViewReceiver, intentFilter);
         }
+
         super.onResume();
 
     }
@@ -1366,14 +1408,13 @@ public abstract class FermatActivity extends AppCompatActivity implements
         try {
             //clean page adapter
 
-            ViewPager pager = (ViewPager) findViewById(R.id.pager);
-            if (pager != null) {
-                pager.removeAllViews();
-                pager.removeAllViewsInLayout();
-                pager.clearOnPageChangeListeners();
-                pager.setVisibility(View.GONE);
-                ((ViewGroup) pager.getParent()).removeView(pager);
-                pager = null;
+            if (pagertabs != null) {
+                pagertabs.removeAllViews();
+                pagertabs.removeAllViewsInLayout();
+                pagertabs.clearOnPageChangeListeners();
+                pagertabs.setVisibility(View.GONE);
+                ((ViewGroup) pagertabs.getParent()).removeView(pagertabs);
+                pagertabs = null;
             }
             System.gc();
 
@@ -1736,8 +1777,8 @@ public abstract class FermatActivity extends AppCompatActivity implements
     protected void onDestroy() {
         try {
             wizards = null;
-            Intent intent = new Intent(this, NotificationService.class);
-            stopService(intent);
+//            Intent intent = new Intent(this, NotificationService.class);
+//            stopService(intent);
 
             //navigationDrawerFragment.onDetach();
 
@@ -1758,7 +1799,7 @@ public abstract class FermatActivity extends AppCompatActivity implements
             }catch (Exception e){
                 //nothing
             }
-            executor.shutdownNow();
+//            executor.shutdownNow();
             super.onDestroy();
         }catch (Exception e){
             e.printStackTrace();
@@ -1787,6 +1828,7 @@ public abstract class FermatActivity extends AppCompatActivity implements
 
     @Override
     public void invalidate() {
+        if(!executor.isShutdown())
         executor.submit(new Runnable() {
             @Override
             public void run() {
@@ -2156,6 +2198,7 @@ public abstract class FermatActivity extends AppCompatActivity implements
 
     @Override
     public FermatRuntime getRuntimeManager(){
+        if(runtimeStructureManager==null) runtimeStructureManager = new RuntimeStructureManager(this);
         return runtimeStructureManager;
     }
 
@@ -2220,8 +2263,8 @@ public abstract class FermatActivity extends AppCompatActivity implements
 
 
     @Override
-    public void cancelNotification(String appPublicKey) {
-        FermatApplication.getInstance().getNotificationService().cancelNotification(appPublicKey);
+    public void cancelNotification(FermatBundle fermatBundle) {
+        FermatApplication.getInstance().getNotificationService().cancelNotification(fermatBundle);
     }
 
     @Override

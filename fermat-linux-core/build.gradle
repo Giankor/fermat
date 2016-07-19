@@ -3,8 +3,6 @@ apply plugin: 'maven'
 apply plugin: 'application'
 apply plugin: 'gradle-one-jar'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
 version = '1.6.1'
 
 
@@ -19,10 +17,18 @@ buildscript {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':fermat-api')
-    compile project(':fermat-core')
     compile project(':fermat-osa-linux-core')
+
+    /* this only is used when generate jar to ApacheJMeter */
+
+    compile group: 'org.apache.jmeter', name: 'ApacheJMeter', version: '2.9'
+    compile group: 'org.apache.jmeter', name: 'ApacheJMeter_http', version: '2.9'
+    compile group: 'org.apache.jmeter', name: 'ApacheJMeter_functions', version: '2.9'
+    compile group: 'org.apache.jmeter', name: 'ApacheJMeter_java', version: '2.9'
+    compile group: 'org.apache.jmeter', name: 'ApacheJMeter_core', version: '2.9'
+
+    /* this only is used when generate jar to ApacheJMeter */
+
 }
 
 sourceSets {

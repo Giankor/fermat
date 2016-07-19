@@ -11,6 +11,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -125,6 +126,12 @@ public abstract class AbstractFermatFragment<S extends FermatSession,R extends R
     }
 
     @Override
+    public void onAttach(Context activity) {
+        super.onAttach(activity);
+        isAttached = true;
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         isAttached = true;
@@ -231,7 +238,7 @@ public abstract class AbstractFermatFragment<S extends FermatSession,R extends R
      * Method to obtain res from other apps
      */
     private final int obtainRes(int resType,int id,SourceLocation sourceLocation,String appOwnerPublicKey){
-        return getFrameworkHelpers().obtainRes(resType,id, sourceLocation, appOwnerPublicKey);
+        return getFrameworkHelpers().obtainRes(resType, id, sourceLocation, appOwnerPublicKey);
     }
 
     /**
@@ -413,11 +420,13 @@ public abstract class AbstractFermatFragment<S extends FermatSession,R extends R
     }
 
     protected final FermatRuntime getRuntimeManager(){
-        return ((FermatActivityManager)getActivity()).getRuntimeManager();
+        if(isAttached)
+            return ((FermatActivityManager) getActivity()).getRuntimeManager();
+        return null;
     }
 
     protected final void changeStartActivity(String activityCode){
-        ((FermatActivityManager)getActivity()).getRuntimeManager().changeStartActivity(appSession.getAppPublicKey(),activityCode);
+            ((FermatActivityManager)getActivity()).getRuntimeManager().changeStartActivity(appSession.getAppPublicKey(),activityCode);
     }
 
     public void changeTabNotification(String activityCode, int number) throws InvalidParameterException {
@@ -563,8 +572,8 @@ public abstract class AbstractFermatFragment<S extends FermatSession,R extends R
         getPaintActivtyFeactures().pushNotification(appSession.getAppPublicKey(), notification);
     }
 
-    public void cancelNotification(){
-        getPaintActivtyFeactures().cancelNotification(appSession.getAppPublicKey());
+    public void cancelNotification(FermatBundle fermatBundle){
+        getPaintActivtyFeactures().cancelNotification(fermatBundle);
     }
 
 
@@ -620,5 +629,17 @@ public abstract class AbstractFermatFragment<S extends FermatSession,R extends R
             }
         }
     }
+
+    /**
+     * Override this method if yo want to implement infinite scrolling or pagination.
+     * Return a {@link RecyclerView.OnScrollListener} for the {@link RecyclerView} of this fragment.
+     *
+     * @return the {@link RecyclerView.OnScrollListener} for the {@link RecyclerView} of this fragment.
+     * This return <code>null</code> by default
+     */
+    public RecyclerView.OnScrollListener getScrollListener() {
+        return null;
+    }
+
 
 }

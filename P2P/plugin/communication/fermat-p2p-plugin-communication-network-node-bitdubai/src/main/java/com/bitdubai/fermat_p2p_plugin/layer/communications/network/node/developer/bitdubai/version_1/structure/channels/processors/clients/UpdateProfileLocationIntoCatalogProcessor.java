@@ -40,24 +40,22 @@ public class UpdateProfileLocationIntoCatalogProcessor extends PackageProcessor 
     private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(UpdateProfileLocationIntoCatalogProcessor.class));
 
     /**
-     * Constructor whit parameter
-     *
-     * @param fermatWebSocketChannelEndpoint register
+     * Constructor
      */
-    public UpdateProfileLocationIntoCatalogProcessor(FermatWebSocketChannelEndpoint fermatWebSocketChannelEndpoint) {
-        super(fermatWebSocketChannelEndpoint, PackageType.UPDATE_PROFILE_GEOLOCATION_REQUEST);
+    public UpdateProfileLocationIntoCatalogProcessor() {
+        super(PackageType.UPDATE_PROFILE_GEOLOCATION_REQUEST);
     }
 
     /**
      * (non-javadoc)
-     * @see PackageProcessor#processingPackage(Session, Package)
+     * @see PackageProcessor#processingPackage(Session, Package, FermatWebSocketChannelEndpoint)
      */
     @Override
-    public void processingPackage(Session session, Package packageReceived) {
+    public void processingPackage(Session session, Package packageReceived, FermatWebSocketChannelEndpoint channel) {
 
         LOG.info("Processing new package received "+packageReceived.getPackageType());
 
-        String channelIdentityPrivateKey = getChannel().getChannelIdentity().getPrivateKey();
+        String channelIdentityPrivateKey = channel.getChannelIdentity().getPrivateKey();
         String destinationIdentityPublicKey = (String) session.getUserProperties().get(HeadersAttName.CPKI_ATT_HEADER_NAME);
         UpdateProfileMsjRespond updateProfileMsjRespond;
         UpdateProfileGeolocationMsgRequest messageContent = UpdateProfileGeolocationMsgRequest.parseContent(packageReceived.getContent());
@@ -82,20 +80,18 @@ public class UpdateProfileLocationIntoCatalogProcessor extends PackageProcessor 
                         updateProfileMsjRespond = new UpdateProfileMsjRespond(MsgRespond.STATUS.FAIL, "Profile type not supported: "+messageContent.getType(), messageContent.getIdentityPublicKey());
                 }
 
-
                 /*
                  * Send the respond
                  */
                 Package packageRespond = Package.createInstance(updateProfileMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.UPDATE_ACTOR_PROFILE_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
                 session.getAsyncRemote().sendObject(packageRespond);
-
             }
 
             LOG.info("Process finish");
 
         }catch (Exception exception){
 
-            updateProfileMsjRespond = new UpdateProfileMsjRespond(MsgRespond.STATUS.FAIL, exception.getCause().getMessage(), messageContent != null ? messageContent.getIdentityPublicKey() : null);
+            updateProfileMsjRespond = new UpdateProfileMsjRespond(MsgRespond.STATUS.FAIL, exception.getMessage(), (messageContent != null && messageContent.getIdentityPublicKey() != null) ? messageContent.getIdentityPublicKey() : null);
 
             try {
 
@@ -137,12 +133,6 @@ public class UpdateProfileLocationIntoCatalogProcessor extends PackageProcessor 
              * Create the transaction
              */
             pair = insertActorsCatalogTransaction(actorsCatalogTransaction);
-            databaseTransaction.addRecordToInsert(pair.getTable(), pair.getRecord());
-
-            /*
-             * Create the transaction for propagation
-             */
-            pair = insertActorsCatalogTransactionsPendingForPropagation(actorsCatalogTransaction);
             databaseTransaction.addRecordToInsert(pair.getTable(), pair.getRecord());
 
             databaseTransaction.execute();
@@ -212,23 +202,6 @@ public class UpdateProfileLocationIntoCatalogProcessor extends PackageProcessor 
          * Create Object transaction
          */
         return transaction;
-    }
-
-
-    /**
-     * Create a new row into the data base
-     *
-     * @param transaction
-     *
-     * @throws CantCreateTransactionStatementPairException if something goes wrong.
-     */
-    private DatabaseTransactionStatementPair insertActorsCatalogTransactionsPendingForPropagation(ActorsCatalogTransaction transaction) throws CantCreateTransactionStatementPairException {
-
-
-        /*
-         * Save into the data base
-         */
-        return getDaoFactory().getActorsCatalogTransactionsPendingForPropagationDao().createInsertTransactionStatementPair(transaction);
     }
 
 }

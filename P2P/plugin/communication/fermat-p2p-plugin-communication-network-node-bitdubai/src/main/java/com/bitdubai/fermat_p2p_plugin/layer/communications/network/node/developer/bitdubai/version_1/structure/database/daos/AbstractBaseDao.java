@@ -331,18 +331,17 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
      * Method that list the all entities on the data base. The valid value of
      * the column name are the att of the <code>DatabaseConstants</code>
      *
-     * @param max     number of records to bring
      * @param offset  pointer to start bringing records.
+     * @param max     number of records to bring
      *
      * @return All entities filtering by the parameter specified.
      *
      * @throws CantReadRecordDataBaseException
-     *
      */
     public final List<E> findAll(final String  columnName ,
                                  final String  columnValue,
-                                 final Integer max        ,
-                                 final Integer offset     ) throws CantReadRecordDataBaseException {
+                                 final Integer offset,
+                                 final Integer max             ) throws CantReadRecordDataBaseException {
 
         if (columnName == null || columnName.isEmpty() || columnValue == null || columnValue.isEmpty())
             throw new IllegalArgumentException("The filter are required, can not be null or empty.");
@@ -351,11 +350,9 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
 
             // load the data base to memory with filters
             final DatabaseTable table = getDatabaseTable();
-
+            table.addStringFilter(columnName, columnValue, DatabaseFilterType.EQUAL);
             table.setFilterTop(max.toString());
             table.setFilterOffSet(offset.toString());
-
-            table.addStringFilter(columnName, columnValue, DatabaseFilterType.EQUAL);
             table.loadToMemory();
 
             final List<DatabaseTableRecord> records = table.getRecords();
@@ -417,7 +414,7 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
      * @throws CantReadRecordDataBaseException if something goes wrong.
      *
      */
-    public final List<E> findAll(final Map<String, Object> filters) throws CantReadRecordDataBaseException {
+    public final List<E> findAll(final Map<String, String> filters) throws CantReadRecordDataBaseException {
 
         if (filters == null || filters.isEmpty())
             throw new IllegalArgumentException("The filters are required, can not be null or empty.");
@@ -429,12 +426,12 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
 
             final List<DatabaseTableFilter> tableFilters = new ArrayList<>();
 
-            for (String key : filters.keySet()) {
+            for (Map.Entry<String, String> entry : filters.entrySet()) {
 
                 DatabaseTableFilter newFilter = table.getEmptyTableFilter();
                 newFilter.setType(DatabaseFilterType.EQUAL);
-                newFilter.setColumn(key);
-                newFilter.setValue((String) filters.get(key));
+                newFilter.setColumn(entry.getKey());
+                newFilter.setValue(entry.getValue());
 
                 tableFilters.add(newFilter);
             }
@@ -475,7 +472,7 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
      * @throws CantReadRecordDataBaseException if something goes wrong.
      *
      */
-    public final List<E> findAll(final Map<String, Object> filters,
+    public final List<E> findAll(final Map<String, String> filters,
                                  final Integer             max    ,
                                  final Integer             offset ) throws CantReadRecordDataBaseException {
 
@@ -492,12 +489,12 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
 
             final List<DatabaseTableFilter> tableFilters = new ArrayList<>();
 
-            for (String key : filters.keySet()) {
+            for (Map.Entry<String, String> entry : filters.entrySet()) {
 
                 DatabaseTableFilter newFilter = table.getEmptyTableFilter();
                 newFilter.setType(DatabaseFilterType.EQUAL);
-                newFilter.setColumn(key);
-                newFilter.setValue((String) filters.get(key));
+                newFilter.setColumn(entry.getKey());
+                newFilter.setValue(entry.getValue());
 
                 tableFilters.add(newFilter);
             }
@@ -535,7 +532,7 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
      * @throws CantReadRecordDataBaseException if something goes wrong.
      *
      */
-    public final long getAllCount(final Map<String, Object> filters) throws CantReadRecordDataBaseException {
+    public final long getAllCount(final Map<String, String> filters) throws CantReadRecordDataBaseException {
 
         if (filters == null || filters.isEmpty())
             throw new IllegalArgumentException("The filters are required, can not be null or empty.");
@@ -547,12 +544,12 @@ public abstract class AbstractBaseDao<E extends AbstractBaseEntity> {
 
             final List<DatabaseTableFilter> tableFilters = new ArrayList<>();
 
-            for (String key : filters.keySet()) {
+            for (Map.Entry<String, String> entry : filters.entrySet()) {
 
                 DatabaseTableFilter newFilter = table.getEmptyTableFilter();
                 newFilter.setType(DatabaseFilterType.EQUAL);
-                newFilter.setColumn(key);
-                newFilter.setValue((String) filters.get(key));
+                newFilter.setColumn(entry.getKey());
+                newFilter.setValue(entry.getValue());
 
                 tableFilters.add(newFilter);
             }

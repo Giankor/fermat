@@ -80,12 +80,12 @@ public class GeolocationIntraUserIdentityFragment extends AbstractFermatFragment
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               // getActivity().onBackPressed();
-
+                // getActivity().onBackPressed();
                 saveAndGoBack();
                 changeActivity(Activities.CCP_SUB_APP_INTRA_IDENTITY_CREATE_IDENTITY, appSession.getAppPublicKey());
             }
         });
+        toolbar.setBackgroundColor(Color.parseColor("#21386D"));
     }
 
     @Override
@@ -206,7 +206,7 @@ public class GeolocationIntraUserIdentityFragment extends AbstractFermatFragment
             } else {
                 acurracydata = Long.parseLong(accuracy.getText().toString());
                 moduleManager.updateIntraUserIdentity(identity.getPublicKey(), identity.getAlias(),identity.getPhrase(),
-                        identity.getImage(),acurracydata,frecuencydata );
+                        identity.getImage(),acurracydata,frecuencydata , moduleManager.getLocationManager());
 
                 Toast.makeText(getActivity(), "Wallet User Identity Geolocation Updated OK.", Toast.LENGTH_LONG).show();
 

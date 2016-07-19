@@ -12,6 +12,7 @@ import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.e
 import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.exceptions.CantHideCryptoBrokerException;
 import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.exceptions.CantListCryptoBrokersException;
 import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.exceptions.CantPublishCryptoBrokerException;
+import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.exceptions.CantUnHideCryptoBrokerException;
 import com.bitdubai.fermat_cbp_api.layer.sub_app_module.crypto_broker_identity.exceptions.CryptoBrokerNotFoundException;
 
 import java.io.Serializable;
@@ -51,6 +52,14 @@ public interface CryptoBrokerIdentityModuleManager extends ModuleManager<Identit
     void publishIdentity(String publicKey) throws CantPublishCryptoBrokerException, CryptoBrokerNotFoundException;
 
     /**
+     * The method <code>unhideidentity</code> is used to publish a Broker identity
+     *
+     * @param publicKey the public key of the crypto Broker to publish
+     * @throws CantUnHideCryptoBrokerException if something goes wrong.
+     */
+    void unHideIdentity (String publicKey) throws CantUnHideCryptoBrokerException, CryptoBrokerNotFoundException;
+
+    /**
      * The method <code>publishIdentity</code> is used to publish a Broker identity
      *
      * @param publicKey the public key of the crypto Broker to publish
@@ -72,6 +81,12 @@ public interface CryptoBrokerIdentityModuleManager extends ModuleManager<Identit
      */
     Location getLocation() throws CantGetDeviceLocationException;
 
-
-
+    /**
+     *
+     * The method <code>itHasAssociatedWallet</code> It lets you know if an identity has an associated broker wallet
+     *
+     * @param brokerPublicKey
+     * @return
+     */
+    Boolean itHasAssociatedWallet(String brokerPublicKey);
 }
