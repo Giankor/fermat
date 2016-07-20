@@ -944,6 +944,8 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
     public void closeConnection() {
         try {
 
+            tryToReconnect = Boolean.FALSE;
+
             if(networkClientCommunicationChannel != null &&
                     networkClientCommunicationChannel.getClientConnection() != null &&
                     networkClientCommunicationChannel.getClientConnection().isOpen()){

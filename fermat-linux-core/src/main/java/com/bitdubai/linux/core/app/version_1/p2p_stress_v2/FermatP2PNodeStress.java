@@ -93,12 +93,14 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
             StringBuffer stringBufferResult = new StringBuffer();
             stringBufferResult.append("totalOfProfileSendToCheckin: ").append(clientManager.getConnection().getTotalOfProfileSendToCheckin());
             stringBufferResult.append("\ntotalOfProfileSuccessChecked: ").append(clientManager.getConnection().getTotalOfProfileSuccessChecked());
-            stringBufferResult.append("totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
+            stringBufferResult.append(" totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
             stringBufferResult.append("\n\ntotalOfMessagesSents: ").append(clientManager.getConnection().getTotalOfMessagesSents());
             stringBufferResult.append("\ntotalOfMessagesSentsSuccessfully: ").append(clientManager.getConnection().getTotalOfMessagesSentsSuccessfully());
-            stringBufferResult.append("totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
+            stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
 
             sampleResult.setSamplerData(stringBufferResult.toString());
+
+            fermatSystem.onDestroy();
 
 
         } catch (Exception e) {
@@ -138,9 +140,22 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
             /*
 			* wait 5 minutes to complete All the work of the Plugins
 			*/
-            TimeUnit.MINUTES.sleep(5);
+            TimeUnit.MINUTES.sleep(2);
 
             clientManager.stop();
+
+            StringBuffer stringBufferResult = new StringBuffer();
+            stringBufferResult.append("totalOfProfileSendToCheckin: ").append(clientManager.getConnection().getTotalOfProfileSendToCheckin());
+            stringBufferResult.append("\ntotalOfProfileSuccessChecked: ").append(clientManager.getConnection().getTotalOfProfileSuccessChecked());
+            stringBufferResult.append(" totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
+            stringBufferResult.append("\n\ntotalOfMessagesSents: ").append(clientManager.getConnection().getTotalOfMessagesSents());
+            stringBufferResult.append("\ntotalOfMessagesSentsSuccessfully: ").append(clientManager.getConnection().getTotalOfMessagesSentsSuccessfully());
+            stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
+
+            System.out.println("\n********************************   SamplerData   *************************************");
+            System.out.println("\n" + stringBufferResult.toString());
+
+            fermatSystem.onDestroy();
 
         } catch (Exception e) {
             e.printStackTrace();
