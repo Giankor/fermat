@@ -73,20 +73,20 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
         SampleResult sampleResult = new SampleResult();
         sampleResult.sampleStart();
 
-        FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
-        FermatSystem fermatSystem = FermatSystem.getInstance();
-
         try {
+
+            FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+            FermatSystem fermatSystem = FermatSystem.getInstance();
 
             fermatSystem.start(fermatLinuxContext, new OSAPlatform());
             fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-            final NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
+            NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
 
 
             /*
-			* wait 5 minutes to complete All the work of the Plugins
+			* wait 2 minutes to complete All the work of the Plugins
 			*/
-            TimeUnit.MINUTES.sleep(5);
+            TimeUnit.MINUTES.sleep(2);
 
             clientManager.stop();
 
@@ -102,6 +102,10 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
             stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
 
             sampleResult.setSamplerData(stringBufferResult.toString());
+
+            fermatLinuxContext = null;
+            fermatSystem = null;
+            clientManager = null;
 
         } catch (Exception e) {
            /*
@@ -127,35 +131,15 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
         return params;
     }
 
-
     public static void main(String[] args) {
 
         try {
 
-            FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
-            FermatSystem fermatSystem = FermatSystem.getInstance();
+            FermatP2PNodeStress fer = new FermatP2PNodeStress();
+            SampleResult result = fer.runTest(null);
 
-            fermatSystem.start(fermatLinuxContext, new OSAPlatform());
-            fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-            final NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-
-            /*
-			* wait 5 minutes to complete All the work of the Plugins
-			*/
-            TimeUnit.MINUTES.sleep(2);
-
-            clientManager.stop();
-
-            StringBuffer stringBufferResult = new StringBuffer();
-            stringBufferResult.append("totalOfProfileSendToCheckin: ").append(clientManager.getConnection().getTotalOfProfileSendToCheckin());
-            stringBufferResult.append("\ntotalOfProfileSuccessChecked: ").append(clientManager.getConnection().getTotalOfProfileSuccessChecked());
-            stringBufferResult.append(" totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
-            stringBufferResult.append("\n\ntotalOfMessagesSents: ").append(clientManager.getConnection().getTotalOfMessagesSents());
-            stringBufferResult.append("\ntotalOfMessagesSentsSuccessfully: ").append(clientManager.getConnection().getTotalOfMessagesSentsSuccessfully());
-            stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
-
-            System.out.println("\n********************************   SamplerData   *************************************");
-            System.out.println("\n" + stringBufferResult.toString());
+            System.out.println(result.getSamplerData());
+            System.exit(0);
 
         } catch (Exception e) {
             e.printStackTrace();
