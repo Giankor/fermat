@@ -56,12 +56,12 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
     /**
      * Represent the fermatContext instance
      */
-    private static final FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+    //private static final FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
 
     /**
      * Represent the fermatSystem instance
      */
-    private static final FermatSystem fermatSystem = FermatSystem.getInstance();
+    //private static final FermatSystem fermatSystem = FermatSystem.getInstance();
 
 
     @Override
@@ -72,6 +72,9 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
 		*/
         SampleResult sampleResult = new SampleResult();
         sampleResult.sampleStart();
+
+        FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+        FermatSystem fermatSystem = FermatSystem.getInstance();
 
         try {
 
@@ -99,9 +102,6 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
             stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
 
             sampleResult.setSamplerData(stringBufferResult.toString());
-
-            fermatSystem.onDestroy();
-
 
         } catch (Exception e) {
            /*
@@ -132,10 +132,12 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
 
         try {
 
+            FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+            FermatSystem fermatSystem = FermatSystem.getInstance();
+
             fermatSystem.start(fermatLinuxContext, new OSAPlatform());
             fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
             final NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-
 
             /*
 			* wait 5 minutes to complete All the work of the Plugins
@@ -154,8 +156,6 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
 
             System.out.println("\n********************************   SamplerData   *************************************");
             System.out.println("\n" + stringBufferResult.toString());
-
-            fermatSystem.onDestroy();
 
         } catch (Exception e) {
             e.printStackTrace();
