@@ -57,8 +57,10 @@ public class CheckInActorRespondProcessor extends PackageProcessor {
 
         if(checkInProfileMsjRespond.getStatus() == CheckInProfileMsjRespond.STATUS.SUCCESS){
             ((NetworkClientProfileRegisteredEvent) event).setStatus(NetworkClientProfileRegisteredEvent.STATUS.SUCCESS);
+            getChannel().getConnection().incrementTotalOfProfileSuccessChecked();
         } else {
             ((NetworkClientProfileRegisteredEvent) event).setStatus(NetworkClientProfileRegisteredEvent.STATUS.FAILED);
+            getChannel().getConnection().incrementTotalOfProfileFailureToCheckin();
         }
 
         /*

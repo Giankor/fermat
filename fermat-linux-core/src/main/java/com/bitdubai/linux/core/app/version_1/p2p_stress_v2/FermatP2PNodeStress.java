@@ -90,6 +90,16 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
             sampleResult.setSuccessful(true);
             sampleResult.setResponseCode("200");
 
+            StringBuffer stringBufferResult = new StringBuffer();
+            stringBufferResult.append("totalOfProfileSendToCheckin: ").append(clientManager.getConnection().getTotalOfProfileSendToCheckin());
+            stringBufferResult.append("\ntotalOfProfileSuccessChecked: ").append(clientManager.getConnection().getTotalOfProfileSuccessChecked());
+            stringBufferResult.append("totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
+            stringBufferResult.append("\n\ntotalOfMessagesSents: ").append(clientManager.getConnection().getTotalOfMessagesSents());
+            stringBufferResult.append("\ntotalOfMessagesSentsSuccessfully: ").append(clientManager.getConnection().getTotalOfMessagesSentsSuccessfully());
+            stringBufferResult.append("totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
+
+            sampleResult.setSamplerData(stringBufferResult.toString());
+
 
         } catch (Exception e) {
            /*

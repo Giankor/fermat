@@ -132,6 +132,41 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
      */
     private NodeProfile nodeProfile;
 
+    /*** use exclusive of ApacheJMeter ***/
+
+    /*
+     * Represent the total Of Profile Send To Checkin
+     */
+    private int totalOfProfileSendToCheckin;
+
+    /*
+     * Represent the total Of Profile Success Checked
+     */
+    private int totalOfProfileSuccessChecked;
+
+    /*
+     * Represent the total Of Profile Success Checked
+     */
+    private int totalOfProfileFailureToCheckin;
+
+    /*
+     * Represent the total Of Messages Sents in General
+     */
+    private int totalOfMessagesSents;
+
+    /*
+     * Represent the total Of Messages Sents Successfully
+     */
+    private int totalOfMessagesSentsSuccessfully;
+
+    /*
+     * Represent the total Of Messages Sents Fails
+     */
+    private int totalOfMessagesSentsFails;
+
+    /*** use exclusive of ApacheJMeter ***/
+
+
     /*
      * Constructor
      */
@@ -165,6 +200,12 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
         this.activeCalls            = new CopyOnWriteArrayList<>();
         this.container              = ClientManager.createClient();
         this.networkClientCommunicationChannel = new NetworkClientCommunicationChannel(this, isExternalNode);
+        this.totalOfProfileSendToCheckin = 0;
+        this.totalOfProfileSuccessChecked = 0;
+        this.totalOfProfileFailureToCheckin = 0;
+        this.totalOfMessagesSents = 0;
+        this.totalOfMessagesSentsSuccessfully = 0;
+        this.totalOfMessagesSentsFails = 0;
     }
 
     /*
@@ -399,6 +440,8 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
 
     @Override
     public void registerProfile(final Profile profile) throws CantRegisterProfileException {
+
+        totalOfProfileSendToCheckin++;
 
         CheckInProfileMsgRequest profileCheckInMsgRequest = new CheckInProfileMsgRequest(profile);
         profileCheckInMsgRequest.setMessageContentType(MessageContentType.JSON);
@@ -688,6 +731,8 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
                                    final String             destinationIdentityPublicKey) throws CantSendMessageException {
         System.out.println("******* IS CONNECTED: "+ isConnected() + " - TRYING NO SEND = "+ packageContent.toJson());
         if (isConnected()){
+
+            totalOfMessagesSents++;
 
             try {
 
@@ -1100,5 +1145,58 @@ public class NetworkClientCommunicationConnection implements NetworkClientConnec
         networkClientCommunicationChannel.getClientConnection().close();
     }
 
+    @Override
+    public int getTotalOfProfileSendToCheckin() {
+        return totalOfProfileSendToCheckin;
+    }
 
+    @Override
+    public int getTotalOfProfileSuccessChecked() {
+        return totalOfProfileSuccessChecked;
+    }
+
+    @Override
+    public void incrementTotalOfProfileSuccessChecked() {
+        totalOfProfileSuccessChecked++;
+    }
+
+    @Override
+    public int getTotalOfProfileFailureToCheckin() {
+        return totalOfProfileFailureToCheckin;
+    }
+
+    @Override
+    public void incrementTotalOfProfileFailureToCheckin() {
+        totalOfProfileFailureToCheckin++;
+    }
+
+    @Override
+    public int getTotalOfMessagesSentsSuccessfully() {
+        return totalOfMessagesSentsSuccessfully;
+    }
+
+    @Override
+    public void incrementTotalOfMessagesSentsSuccessfully() {
+        totalOfMessagesSentsSuccessfully++;
+    }
+
+    @Override
+    public int getTotalOfMessagesSentsFails() {
+        return totalOfMessagesSentsFails;
+    }
+
+    @Override
+    public void incrementTotalOfMessagesSentsFails() {
+        totalOfMessagesSentsFails++;
+    }
+
+    @Override
+    public int getTotalOfMessagesSents() {
+        return totalOfMessagesSents;
+    }
+
+    @Override
+    public void incrementTotalOfMessagesSents() {
+        totalOfMessagesSents++;
+    }
 }

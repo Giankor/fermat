@@ -124,10 +124,14 @@ public class CheckInClientRespondProcessor extends PackageProcessor {
              */
                 System.out.println("CheckInClientRespondProcessor - Raised a event = P2pEventType.NETWORK_CLIENT_REGISTERED");
                 getEventManager().raiseEvent(event);
+
+                getChannel().getConnection().incrementTotalOfProfileSuccessChecked();
             }
 
         } else {
             //there is some wrong
+
+                getChannel().getConnection().incrementTotalOfProfileFailureToCheckin();
         }
 
     }

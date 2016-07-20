@@ -146,6 +146,7 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
      */
     public NetworkClientCommunicationPluginRoot() {
         super(new PluginVersionReference(new Version()));
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
     }
 
     @Override
@@ -192,6 +193,12 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
             );
 
             networkClientCommunicationConnection.initializeAndConnect();
+
+            /*
+            * Create and Scheduled the supervisorConnectionAgent
+            */
+            final NetworkClientCommunicationSupervisorConnectionAgent supervisorConnectionAgent = new NetworkClientCommunicationSupervisorConnectionAgent(this);
+            scheduledExecutorService.scheduleAtFixedRate(supervisorConnectionAgent, 10, 20, TimeUnit.SECONDS);
 
 
         } catch (Exception exception){
@@ -545,8 +552,10 @@ public class NetworkClientCommunicationPluginRoot extends AbstractPlugin impleme
     @Override
     public void stop() {
 
+        scheduledExecutorService.shutdownNow();
         getConnection().closeConnection();
         super.stop();
+
     }
 
 
