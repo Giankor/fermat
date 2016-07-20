@@ -1,12 +1,12 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.clients;
 
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTransaction;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.request.CheckInProfileMsgRequest;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.ActorProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.NetworkNodePluginRoot;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.FermatWebSocketChannelEndpoint;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.PackageProcessor;
@@ -19,10 +19,12 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantInsertRecordDataBaseException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantReadRecordDataBaseException;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.RecordNotFoundException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.util.ThumbnailUtil;
 
 import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 
 import javax.websocket.Session;
@@ -49,20 +51,18 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
     private String nodeIdentity = ((NetworkNodePluginRoot) NodeContext.get(NodeContextItem.PLUGIN_ROOT)).getIdentity().getPublicKey();
 
     /**
-     * Constructor whit parameter
-     *
-     * @param fermatWebSocketChannelEndpoint register
+     * Constructor
      */
-    public AddActorIntoCatalogProcessor(FermatWebSocketChannelEndpoint fermatWebSocketChannelEndpoint) {
-        super(fermatWebSocketChannelEndpoint, PackageType.CHECK_IN_ACTOR_REQUEST);
+    public AddActorIntoCatalogProcessor() {
+        super(PackageType.CHECK_IN_ACTOR_REQUEST);
     }
 
     /**
      * (non-javadoc)
-     * @see PackageProcessor#processingPackage(Session, Package)
+     * @see PackageProcessor#processingPackage(Session, Package, FermatWebSocketChannelEndpoint)
      */
     @Override
-    public void processingPackage(Session session, Package packageReceived) {
+    public void processingPackage(Session session, Package packageReceived, FermatWebSocketChannelEndpoint fermatWebSocketChannelEndpoint) {
 
         LOG.info("Processing new package received");
 
@@ -168,8 +168,6 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
                     pair = insertActorsCatalogTransaction(actorsCatalogTransaction);
                     databaseTransaction.addRecordToInsert(pair.getTable(), pair.getRecord());
 
-
-
                     /*
                      * Create the transaction for propagation
                      */
@@ -238,7 +236,7 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
      * @param actorProfile
      * @throws CantInsertRecordDataBaseException
      */
-    private DatabaseTransactionStatementPair insertActorsCatalog(ActorProfile actorProfile, Timestamp currentTimeStamp) throws CantCreateTransactionStatementPairException {
+    private DatabaseTransactionStatementPair insertActorsCatalog(ActorProfile actorProfile, Timestamp currentTimeStamp) throws CantCreateTransactionStatementPairException, IOException {
 
         /*
          * Create the actorsCatalog
@@ -250,6 +248,12 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
         actorsCatalog.setExtraData(actorProfile.getExtraData());
         actorsCatalog.setName(actorProfile.getName());
         actorsCatalog.setPhoto(actorProfile.getPhoto());
+
+        if(actorProfile.getPhoto() != null && actorProfile.getPhoto().length > 0)
+            actorsCatalog.setThumbnail(ThumbnailUtil.generateThumbnail(actorProfile.getPhoto(), "JPG"));
+        else
+            actorsCatalog.setThumbnail(null);
+
         actorsCatalog.setNodeIdentityPublicKey(nodeIdentity);
         actorsCatalog.setClientIdentityPublicKey(actorProfile.getClientIdentityPublicKey());
         actorsCatalog.setLastUpdateTime(currentTimeStamp);
@@ -277,7 +281,7 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
      * @param actorProfile
      * @throws CantInsertRecordDataBaseException
      */
-    private DatabaseTransactionStatementPair updateActorsCatalog(ActorProfile actorProfile, Timestamp currentTimeStamp) throws CantCreateTransactionStatementPairException {
+    private DatabaseTransactionStatementPair updateActorsCatalog(ActorProfile actorProfile, Timestamp currentTimeStamp) throws CantCreateTransactionStatementPairException, IOException {
 
         /*
          * Create the actorsCatalog
@@ -288,6 +292,12 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
         actorsCatalog.setAlias(actorProfile.getAlias());
         actorsCatalog.setName(actorProfile.getName());
         actorsCatalog.setPhoto(actorProfile.getPhoto());
+
+        if(actorProfile.getPhoto() != null && actorProfile.getPhoto().length > 0)
+            actorsCatalog.setThumbnail(ThumbnailUtil.generateThumbnail(actorProfile.getPhoto(), "JPG"));
+        else
+            actorsCatalog.setThumbnail(null);
+
         actorsCatalog.setExtraData(actorProfile.getExtraData());
         actorsCatalog.setNodeIdentityPublicKey(nodeIdentity);
         actorsCatalog.setClientIdentityPublicKey(actorProfile.getClientIdentityPublicKey());
@@ -331,7 +341,7 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
      * @param actorProfile
      * @throws CantInsertRecordDataBaseException
      */
-    private ActorsCatalogTransaction createActorsCatalogTransaction(ActorProfile actorProfile, String transactionType, Timestamp currentMillis)  {
+    private ActorsCatalogTransaction createActorsCatalogTransaction(ActorProfile actorProfile, String transactionType, Timestamp currentMillis) throws IOException {
 
         /*
          * Create the transaction
@@ -342,6 +352,12 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
         transaction.setAlias(actorProfile.getAlias());
         transaction.setName(actorProfile.getName());
         transaction.setPhoto(actorProfile.getPhoto());
+
+        if(actorProfile.getPhoto() != null && actorProfile.getPhoto().length > 0)
+            transaction.setThumbnail(ThumbnailUtil.generateThumbnail(actorProfile.getPhoto(), "JPG"));
+        else
+           transaction.setThumbnail(null);
+
         transaction.setExtraData(actorProfile.getExtraData());
         transaction.setNodeIdentityPublicKey(nodeIdentity);
         transaction.setClientIdentityPublicKey(actorProfile.getClientIdentityPublicKey());
@@ -388,7 +404,7 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
      * @throws CantReadRecordDataBaseException
      * @throws RecordNotFoundException
      */
-    private boolean validateProfileChange(ActorProfile actorProfile) throws CantReadRecordDataBaseException, RecordNotFoundException {
+    private boolean validateProfileChange(ActorProfile actorProfile) throws CantReadRecordDataBaseException, RecordNotFoundException, IOException {
 
         /*
          * Create the actorsCatalog
@@ -403,6 +419,11 @@ public class AddActorIntoCatalogProcessor extends PackageProcessor {
         actorsCatalog.setClientIdentityPublicKey(actorProfile.getClientIdentityPublicKey());
         actorsCatalog.setNodeIdentityPublicKey(nodeIdentity);
         actorsCatalog.setLastLocation(actorProfile.getLocation());
+
+        if(actorProfile.getPhoto() != null && actorProfile.getPhoto().length > 0)
+            actorsCatalog.setThumbnail(ThumbnailUtil.generateThumbnail(actorProfile.getPhoto(), "JPG"));
+        else
+            actorsCatalog.setThumbnail(null);
 
         ActorsCatalog actorsCatalogRegister = getDaoFactory().getActorsCatalogDao().findById(actorProfile.getIdentityPublicKey());
 

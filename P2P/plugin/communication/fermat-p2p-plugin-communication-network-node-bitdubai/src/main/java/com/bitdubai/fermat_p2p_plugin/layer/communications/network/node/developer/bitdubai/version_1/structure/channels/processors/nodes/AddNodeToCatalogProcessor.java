@@ -2,11 +2,11 @@ package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develop
 
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTransaction;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.DatabaseTransactionFailedException;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NodeProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.FermatWebSocketChannelEndpoint;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.PackageProcessor;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.data.node.request.AddNodeToCatalogMsgRequest;
@@ -29,7 +29,7 @@ import javax.websocket.Session;
  * Created by Roberto Requena - (rart3001@gmail.com) on 04/04/16.
  *
  * @version 1.0
- * @since Java JDK 1.7
+ * @since   Java JDK 1.7
  */
 public class AddNodeToCatalogProcessor extends PackageProcessor {
 
@@ -38,27 +38,23 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
      */
     private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(AddNodeToCatalogProcessor.class));
 
-
-
     /**
-     * Constructor with parameter
-     *
-     * @param channel
-     * */
-    public AddNodeToCatalogProcessor(FermatWebSocketChannelEndpoint channel) {
-        super(channel, PackageType.ADD_NODE_TO_CATALOG_REQUEST);
+     * Constructor
+     */
+    public AddNodeToCatalogProcessor() {
+        super(PackageType.ADD_NODE_TO_CATALOG_REQUEST);
     }
 
     /**
      * (non-javadoc)
-     * @see PackageProcessor#processingPackage(Session, Package)
+     * @see PackageProcessor#processingPackage(Session, Package, FermatWebSocketChannelEndpoint )
      */
     @Override
-    public void processingPackage(Session session, Package packageReceived) {
+    public void processingPackage(Session session, Package packageReceived, FermatWebSocketChannelEndpoint channel) {
 
         LOG.info("Processing new package received");
 
-        String channelIdentityPrivateKey = getChannel().getChannelIdentity().getPrivateKey();
+        String channelIdentityPrivateKey = channel.getChannelIdentity().getPrivateKey();
         String destinationIdentityPublicKey = (String) session.getUserProperties().get(HeadersAttName.CPKI_ATT_HEADER_NAME);
         NodeProfile nodeProfile = null;
         AddNodeToCatalogMsjRespond addNodeToCatalogMsjRespond = null;
@@ -70,7 +66,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
             /*
              * Create the method call history
              */
-            methodCallsHistory(messageContent.toJson(), destinationIdentityPublicKey);
+            //methodCallsHistory(messageContent.toJson(), destinationIdentityPublicKey);
 
             /*
              * Validate if content type is the correct
@@ -139,7 +135,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
                  */
                 session.getAsyncRemote().sendObject(packageRespond);
 
-            }else {
+            } else {
 
                 addNodeToCatalogMsjRespond = new AddNodeToCatalogMsjRespond(AddNodeToCatalogMsjRespond.STATUS.FAIL, "Invalid content type: "+messageContent.getMessageContentType(), nodeProfile, Boolean.FALSE);
                 Package packageRespond = Package.createInstance(addNodeToCatalogMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.ADD_NODE_TO_CATALOG_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
@@ -152,7 +148,6 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
             }
 
             LOG.info("Processing finish");
-
 
         } catch (Exception exception){
 
@@ -175,9 +170,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
             } catch (Exception e) {
                 LOG.error(e.getMessage());
             }
-
         }
-
     }
 
     /**
@@ -185,7 +178,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
      *
      * @param nodeProfile
      *
-     * @throws CantCreateTransactionStatementPairException
+     * @throws CantCreateTransactionStatementPairException if something goes wrong.
      */
     private DatabaseTransactionStatementPair insertNodesCatalog(NodeProfile nodeProfile) throws CantCreateTransactionStatementPairException {
 
@@ -218,6 +211,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
          * Create the NodesCatalog
          */
         NodesCatalogTransaction transaction = new NodesCatalogTransaction();
+
         transaction.setIp(nodeProfile.getIp());
         transaction.setDefaultPort(nodeProfile.getDefaultPort());
         transaction.setIdentityPublicKey(nodeProfile.getIdentityPublicKey());
@@ -225,11 +219,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
         transaction.setTransactionType(NodesCatalogTransaction.ADD_TRANSACTION_TYPE);
         transaction.setHashId(transaction.getHashId());
         transaction.setLastConnectionTimestamp(new Timestamp(System.currentTimeMillis()));
-
-        //Validate if location are available
-        if (nodeProfile.getLocation() != null){
-            transaction.setLastLocation(nodeProfile.getLocation().getLatitude(), nodeProfile.getLocation().getLongitude());
-        }
+        transaction.setLastLocation(nodeProfile.getLocation());
 
         return transaction;
     }
@@ -239,7 +229,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
      *
      * @param nodesCatalogTransaction
      *
-     * @throws CantCreateTransactionStatementPairException
+     * @throws CantCreateTransactionStatementPairException if something goes wrong.
      */
     private DatabaseTransactionStatementPair insertNodesCatalogTransaction(NodesCatalogTransaction nodesCatalogTransaction) throws CantCreateTransactionStatementPairException {
 
@@ -254,7 +244,7 @@ public class AddNodeToCatalogProcessor extends PackageProcessor {
      *
      * @param nodesCatalogTransaction
      *
-     * @throws CantCreateTransactionStatementPairException
+     * @throws CantCreateTransactionStatementPairException if something goes wrong.
      */
     private DatabaseTransactionStatementPair insertNodesCatalogTransactionsPendingForPropagation(NodesCatalogTransaction nodesCatalogTransaction) throws CantCreateTransactionStatementPairException {
 

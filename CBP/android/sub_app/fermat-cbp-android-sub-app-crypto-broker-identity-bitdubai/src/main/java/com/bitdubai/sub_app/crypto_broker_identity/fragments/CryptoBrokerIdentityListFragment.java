@@ -79,7 +79,6 @@ public class CryptoBrokerIdentityListFragment
     @Override
     protected void initViews(View layout) {
         super.initViews(layout);
-
         this.layout = layout;
 
         emptyListViewsContainer = layout.findViewById(R.id.no_crypto_broker_identities);
@@ -89,6 +88,7 @@ public class CryptoBrokerIdentityListFragment
                 .setBody(R.string.cbp_broker_identity_welcome_body)
                 .setSubTitle(R.string.cbp_broker_identity_welcome_subTitle)
                 .setTemplateType(PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
+                .setVIewColor(R.color.background_toolbar)
                 .setIsCheckEnabled(false)
                 .build();
 
@@ -284,7 +284,7 @@ public class CryptoBrokerIdentityListFragment
                     recyclerView.setVisibility(View.VISIBLE);
                 }
 
-            } catch (IllegalAccessException e) {
+            } catch (ClassCastException e) {
                 appSession.getErrorManager().reportUnexpectedSubAppException(SubApps.CBP_CRYPTO_BROKER_IDENTITY,
                         UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
             }

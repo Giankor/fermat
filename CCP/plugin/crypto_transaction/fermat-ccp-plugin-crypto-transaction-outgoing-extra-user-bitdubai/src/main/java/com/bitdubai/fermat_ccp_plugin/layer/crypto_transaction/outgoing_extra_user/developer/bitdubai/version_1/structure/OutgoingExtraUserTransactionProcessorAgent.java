@@ -56,8 +56,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
     private final CryptoWalletManager cryptoWalletManager;
     private final CryptoVaultManager cryptoVaultManager  ;
 
-    private final BlockchainManager<ECKey, Transaction> bitcoinNetworkManager  ;
-    private final TransactionSender<CryptoTransaction> bitcoinNetworkTransactionSender  ;
+    private final BlockchainManager bitcoinNetworkManager  ;
     private final ErrorManager         errorManager        ;
     private final OutgoingExtraUserDao dao                 ;
     private EventManager eventManager;
@@ -69,8 +68,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
      */
     public OutgoingExtraUserTransactionProcessorAgent(final CryptoWalletManager cryptoWalletManager,
                                                       final CryptoVaultManager cryptoVaultManager  ,
-                                                      final BlockchainManager<ECKey, Transaction> bitcoinNetworkManager,
-                                                      final TransactionSender<CryptoTransaction> bitcoinNetworkTransactionSender,
+                                                      final BlockchainManager bitcoinNetworkManager,
                                                       final ErrorManager         errorManager        ,
                                                       final OutgoingExtraUserDao dao                 ,
                                                       final EventManager eventManager,
@@ -80,7 +78,6 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
         this.cryptoWalletManager = cryptoWalletManager;
         this.cryptoVaultManager   = cryptoVaultManager  ;
         this.bitcoinNetworkManager   = bitcoinNetworkManager  ;
-        this.bitcoinNetworkTransactionSender = bitcoinNetworkTransactionSender;
         this.errorManager         = errorManager        ;
         this.dao                  = dao                 ;
         this.eventManager         = eventManager;
@@ -212,7 +209,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
         for(com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.outgoing_extra_user.developer.bitdubai.version_1.util.TransactionWrapper transaction : transactionList) {
             // Now we apply it in the vault
             try {
-                String hash = this.cryptoVaultManager.sendBitcoins(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), new CryptoAmount(transaction.getAmount()), transaction.getBlockchainNetworkType());
+                String hash = this.cryptoVaultManager.sendBitcoins(transaction.getWalletPublicKey(), transaction.getTransactionId(), transaction.getAddressTo(), new CryptoAmount(transaction.getAmount(),transaction.getFeeOrigin(),transaction.getFee()), transaction.getBlockchainNetworkType());
                 dao.setTransactionHash(transaction,hash);
                 dao.setToSTCV(transaction);
 
@@ -222,7 +219,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
 
                 try {
                     dao.cancelTransaction(transaction, "Insufficient founds.");
-                    roolback(transaction, true);
+                    roolback(transaction,false);
                 } catch (CantUpdateRecordException | InconsistentTableStateException | CantLoadTableToMemoryException e2) {
 
                     reportUnexpectedError(e2);
@@ -241,7 +238,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
                 try {
 
                     dao.cancelTransaction(transaction, "There was a problem and the money was not sent.");
-                    roolback(transaction, true);
+                    roolback(transaction, false);
 
                 } catch (Exception exception) {
                     reportUnexpectedError(exception);
@@ -257,10 +254,10 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
                 long currentTime = System.currentTimeMillis();
                 long dif = currentTime - sentDate;
 
-                if (dif >= 180000) {
+                if (dif >= 540000) {
                     try {
                         dao.cancelTransaction(transaction, " ROLLBACK 4.");
-                        roolback(transaction, true);
+                        roolback(transaction, false);
                         System.out.print("ROLLBACK 4");
                     } catch (CantUpdateRecordException e1) {
                         e1.printStackTrace();
@@ -294,7 +291,7 @@ public class OutgoingExtraUserTransactionProcessorAgent extends FermatAgent impl
             try {
                 CryptoWalletWallet cryptoWalletWallet = cryptoWalletManager.loadWallet(transaction.getWalletPublicKey());
                 CryptoStatus cryptoStatus = this.bitcoinNetworkManager.getCryptoStatus(transaction.getTransactionHash());
-                com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.outgoing_extra_user.developer.bitdubai.version_1.util.TransactionHandler.handleTransaction(transaction, bitcoinNetworkManager, bitcoinNetworkTransactionSender, cryptoStatus, cryptoWalletWallet, this.dao, this.errorManager);
+                com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.outgoing_extra_user.developer.bitdubai.version_1.util.TransactionHandler.handleTransaction(transaction, bitcoinNetworkManager, cryptoStatus, cryptoWalletWallet, this.dao, this.errorManager);
 
             } catch (Exception exception) {
                 reportUnexpectedError(exception);
