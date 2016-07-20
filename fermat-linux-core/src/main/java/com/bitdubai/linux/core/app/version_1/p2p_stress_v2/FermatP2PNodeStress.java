@@ -56,12 +56,12 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
     /**
      * Represent the fermatContext instance
      */
-    private static final FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+    //private static final FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
 
     /**
      * Represent the fermatSystem instance
      */
-    private static final FermatSystem fermatSystem = FermatSystem.getInstance();
+    //private static final FermatSystem fermatSystem = FermatSystem.getInstance();
 
 
     @Override
@@ -75,21 +75,37 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
 
         try {
 
+            FermatLinuxContext fermatLinuxContext = FermatLinuxContext.getInstance();
+            FermatSystem fermatSystem = FermatSystem.getInstance();
+
             fermatSystem.start(fermatLinuxContext, new OSAPlatform());
             fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-            final NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
+            NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
 
 
             /*
-			* wait 5 minutes to complete All the work of the Plugins
+			* wait 2 minutes to complete All the work of the Plugins
 			*/
-            TimeUnit.MINUTES.sleep(5);
+            TimeUnit.MINUTES.sleep(2);
 
             clientManager.stop();
 
             sampleResult.setSuccessful(true);
             sampleResult.setResponseCode("200");
 
+            StringBuffer stringBufferResult = new StringBuffer();
+            stringBufferResult.append("totalOfProfileSendToCheckin: ").append(clientManager.getConnection().getTotalOfProfileSendToCheckin());
+            stringBufferResult.append("\ntotalOfProfileSuccessChecked: ").append(clientManager.getConnection().getTotalOfProfileSuccessChecked());
+            stringBufferResult.append(" totalOfProfileFailureToCheckin: ").append(clientManager.getConnection().getTotalOfProfileFailureToCheckin());
+            stringBufferResult.append("\n\ntotalOfMessagesSents: ").append(clientManager.getConnection().getTotalOfMessagesSents());
+            stringBufferResult.append("\ntotalOfMessagesSentsSuccessfully: ").append(clientManager.getConnection().getTotalOfMessagesSentsSuccessfully());
+            stringBufferResult.append(" totalOfMessagesSentsFails: ").append(clientManager.getConnection().getTotalOfMessagesSentsFails());
+
+            sampleResult.setSamplerData(stringBufferResult.toString());
+
+            fermatLinuxContext = null;
+            fermatSystem = null;
+            clientManager = null;
 
         } catch (Exception e) {
            /*
@@ -115,22 +131,15 @@ public class FermatP2PNodeStress extends AbstractJavaSamplerClient implements Se
         return params;
     }
 
-
     public static void main(String[] args) {
 
         try {
 
-            fermatSystem.start(fermatLinuxContext, new OSAPlatform());
-            fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
-            final NetworkClientManager clientManager = (NetworkClientManager) fermatSystem.startAndGetPluginVersion(new PluginVersionReference(Platforms.COMMUNICATION_PLATFORM, Layers.COMMUNICATION, Plugins.NETWORK_CLIENT, Developers.BITDUBAI, new Version()));
+            FermatP2PNodeStress fer = new FermatP2PNodeStress();
+            SampleResult result = fer.runTest(null);
 
-
-            /*
-			* wait 5 minutes to complete All the work of the Plugins
-			*/
-            TimeUnit.MINUTES.sleep(5);
-
-            clientManager.stop();
+            System.out.println(result.getSamplerData());
+            System.exit(0);
 
         } catch (Exception e) {
             e.printStackTrace();

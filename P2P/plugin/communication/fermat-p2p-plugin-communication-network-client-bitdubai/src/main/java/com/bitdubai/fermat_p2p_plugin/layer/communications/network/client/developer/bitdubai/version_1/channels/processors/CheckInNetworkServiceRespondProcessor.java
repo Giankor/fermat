@@ -1,10 +1,13 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.channels.processors;
 
+import com.bitdubai.fermat_api.layer.all_definition.crypto.asymmetric.ECCKeyPair;
 import com.bitdubai.fermat_api.layer.all_definition.events.EventSource;
 import com.bitdubai.fermat_api.layer.all_definition.events.interfaces.FermatEvent;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.events.NetworkClientProfileRegisteredEvent;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantRegisterProfileException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.respond.CheckInProfileMsjRespond;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.ActorProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.P2pEventType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.channels.endpoints.NetworkClientCommunicationChannel;
@@ -61,8 +64,24 @@ public class CheckInNetworkServiceRespondProcessor extends PackageProcessor {
             System.out.println("CheckInClientRespondProcessor - Raised a event = P2pEventType.NETWORK_CLIENT_NETWORK_SERVICE_PROFILE_REGISTERED");
             getEventManager().raiseEvent(event);
 
+            getChannel().getConnection().incrementTotalOfProfileSuccessChecked();
+
+            ActorProfile actorProfile = new ActorProfile();
+            actorProfile.setIdentityPublicKey(new ECCKeyPair().getPublicKey());
+            actorProfile.setName("nameActor");
+            actorProfile.setAlias("aliasActor");
+            actorProfile.setActorType("IUS");
+
+            try {
+                getChannel().getConnection().registerProfile(actorProfile);
+            } catch (CantRegisterProfileException e) {
+                e.printStackTrace();
+            }
+
         }else{
             //there is some wrong
+
+            getChannel().getConnection().incrementTotalOfProfileFailureToCheckin();
         }
 
     }

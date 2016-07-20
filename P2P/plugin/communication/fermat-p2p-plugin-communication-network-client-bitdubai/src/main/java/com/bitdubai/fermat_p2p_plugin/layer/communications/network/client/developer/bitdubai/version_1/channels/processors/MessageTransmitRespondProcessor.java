@@ -65,9 +65,11 @@ public class MessageTransmitRespondProcessor extends PackageProcessor{
             System.out.println("MessageTransmitRespondProcessor - Raised a event = P2pEventType.NETWORK_CLIENT_SENT_MESSAGE_DELIVERED");
             getEventManager().raiseEvent(event);
 
+            getChannel().getConnection().incrementTotalOfMessagesSentsSuccessfully();
 
         }else{
 
+            getChannel().getConnection().incrementTotalOfMessagesSentsFails();
 
         }
 

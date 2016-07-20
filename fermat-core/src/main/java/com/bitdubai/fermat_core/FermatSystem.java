@@ -526,7 +526,8 @@ public final class FermatSystem {
         final ConcurrentHashMap<PluginVersionReference, AbstractPlugin> pluginList = this.fermatSystemContext.listPluginVersions();
         for (ConcurrentHashMap.Entry<PluginVersionReference, AbstractPlugin> plugin : pluginList.entrySet()) {
             try {
-                plugin.getValue().stop();
+                if(plugin.getValue() != null)
+                    plugin.getValue().stop();
             } catch (Exception e) {
                 System.err.println(e.toString());
             }

@@ -1,12 +1,16 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.client.developer.bitdubai.version_1.channels.processors;
 
+import com.bitdubai.fermat_api.layer.all_definition.crypto.asymmetric.ECCKeyPair;
 import com.bitdubai.fermat_api.layer.all_definition.events.EventSource;
 import com.bitdubai.fermat_api.layer.all_definition.events.interfaces.FermatEvent;
+import com.bitdubai.fermat_api.layer.all_definition.network_service.enums.NetworkServiceType;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.Database;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.events.NetworkClientConnectionSuccessEvent;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.events.NetworkClientRegisteredEvent;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.clients.exceptions.CantRegisterProfileException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.respond.CheckInProfileMsjRespond;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NetworkServiceProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NodeProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.P2pEventType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
@@ -124,10 +128,24 @@ public class CheckInClientRespondProcessor extends PackageProcessor {
              */
                 System.out.println("CheckInClientRespondProcessor - Raised a event = P2pEventType.NETWORK_CLIENT_REGISTERED");
                 getEventManager().raiseEvent(event);
+
+                getChannel().getConnection().incrementTotalOfProfileSuccessChecked();
+
+                NetworkServiceProfile networkServiceProfile = new NetworkServiceProfile();
+                networkServiceProfile.setIdentityPublicKey(new ECCKeyPair().getPublicKey());
+                networkServiceProfile.setNetworkServiceType(NetworkServiceType.INTRA_USER);
+
+                try {
+                    getChannel().getConnection().registerProfile(networkServiceProfile);
+                } catch (CantRegisterProfileException e) {
+                    e.printStackTrace();
+                }
             }
 
         } else {
             //there is some wrong
+
+                getChannel().getConnection().incrementTotalOfProfileFailureToCheckin();
         }
 
     }
